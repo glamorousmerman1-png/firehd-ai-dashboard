@@ -1,0 +1,8 @@
+# Streamlit Secrets (APIキー等の機密情報)
+.streamlit/secrets.toml
+
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+venv/
+.env

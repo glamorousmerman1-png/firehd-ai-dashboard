@@ -1,7 +1,16 @@
 # ⚡ Fire HD常駐型「AIインテリジェンス・ダッシュボード」
 
 Fire HDなどのタブレット横画面（1280×800 程度）で全画面表示し、PCの電源がオフでも単体で常駐できるパーソナルAIダッシュボードです。  
-Streamlit Community Cloud にデプロイすることで、**完全無料**で24時間いつでもアクセスできる環境を構築できます。
+Streamlit Community Cloud にデプロイされており、**完全無料**で24時間いつでもアクセスできます。
+
+---
+
+## 🌐 アプリURL
+
+- **通常アクセス用**:  
+  👉 **[https://ngrwi3j3aajjq2qjkugxsh.streamlit.app/](https://ngrwi3j3aajjq2qjkugxsh.streamlit.app/)**
+- **Fire HD / タブレット常駐用（ヘッダー最小化・全画面モード）**:  
+  👉 **[https://ngrwi3j3aajjq2qjkugxsh.streamlit.app/?embed=true](https://ngrwi3j3aajjq2qjkugxsh.streamlit.app/?embed=true)**
 
 ---
 
@@ -16,99 +25,35 @@ Streamlit Community Cloud にデプロイすることで、**完全無料**で24
 3. **📝 タスク・アドバイザー（Daily Task Advisor）**
    - タスクの追加・完了チェック・個別削除ができる軽量ToDoリスト
    - 「AIアドバイス生成」ボタンで、最優先タスクの選定・時間配分や段取りのコツ・モチベーションメッセージを常時掲示
+4. **🔐 パスワード（合言葉）ロック機能**
+   - 不特定多数からのアクセスを防ぎ、自分専用として安全に運用するためのロック画面を搭載
+   - クラウドのSecretsにパスワードを設定することで、合言葉を入力したユーザーのみがアクセス可能
 
 ---
 
 ## 🛠️ 技術スタック
 - **言語 / FW**: Python 3.10+ / [Streamlit](https://streamlit.io/)
 - **AI SDK**: `google-genai`（Google公式 最新SDK）
-- **AIモデル**: `gemini-1.5-flash`（無料枠対応、低遅延・高精度）
+- **AIモデル**: `gemini-2.5-flash`（無料枠対応、超低遅延・高精度）
 - **デザイン**: 1280×800 タブレット横置き最適化ダークテーマ（タッチフレンドリーな大型UI）
+- **ホスティング**: Streamlit Community Cloud（24時間無料稼働）
 
 ---
 
-## 🚀 1. ローカルPCでのテスト実行手順
-
-### 手順 A: 仮想環境の作成とライブラリ導入
-```bash
-# プロジェクトフォルダに移動
-cd /path/to/firehd-ai-dashboard
-
-# 仮想環境の作成 (任意ですが推奨)
-python -m venv venv
-# Windowsの場合
-venv\Scripts\activate
-# Mac/Linuxの場合
-source venv/bin/activate
-
-# 依存ライブラリのインストール
-pip install -r requirements.txt
-```
-
-### 手順 B: アプリの起動
-```bash
-# 環境変数でAPIキーを渡す場合
-set GEMINI_API_KEY="あなたのAPIキー"   # Windows PowerShellなら $env:GEMINI_API_KEY="あなたのAPIキー"
-
-# アプリ起動
-streamlit run app.py
-```
-ブラウザが自動的に開き、`http://localhost:8501` でダッシュボードが立ち上がります。  
-※APIキーを環境変数に設定していない場合でも、画面左のサイドバーから直接APIキーを入力できます。
-
----
-
-## 🌐 2. GitHubリポジトリへのアップロード手順
-
-Streamlit Community Cloudにデプロイするため、コードをGitHubにプッシュします。
-
-```bash
-# git初期化
-git init
-
-# リポジトリに追加
-git add .
-git commit -m "feat: Fire HD AI intelligence dashboard initial commit"
-
-# GitHubで新規リポジトリ（例: firehd-ai-dashboard）を作成後、紐付けてプッシュ
-git branch -M main
-git remote add origin https://github.com/<あなたのユーザー名>/firehd-ai-dashboard.git
-git push -u origin main
-```
-
----
-
-## ☁️ 3. Streamlit Community Cloud への無料デプロイ手順
-
-1. [Streamlit Community Cloud](https://share.streamlit.io/) にアクセスし、GitHubアカウントでサインインします。
-2. 右上の **「New app」** ボタンをクリックします。
-3. デプロイ設定を入力します：
-   - **Repository**: `<あなたのユーザー名>/firehd-ai-dashboard`
-   - **Branch**: `main`
-   - **Main file path**: `app.py`
-4. **「Advanced settings...」** をクリックし、**Secrets** にGemini APIキーを登録します：
-   ```toml
-   GEMINI_API_KEY = "AIzaSy..."
-   ```
-   > ※Google AI Studio ( https://aistudio.google.com/ ) で無料取得したAPIキーを入力してください。
-5. **「Deploy!」** をクリックします。数分で公開URL（例: `https://<アプリ名>.streamlit.app`）が発行されます。
-
----
-
-## 📱 4. Fire HD（Silkブラウザ）での常駐設定のコツ
+## 📱 Fire HD（Silkブラウザ）での常駐設定のコツ
 
 Fire HD（7 / 8 / 10 等）をスマートディスプレイ化して快適に常駐運用するための設定テクニックです。
 
-### ① 全画面・ツールバー非表示で開くURLの工夫
-StreamlitのURLの末尾に `?embed=true` を付けると、上部のStreamlitヘッダーなどが最小化され、タブレット画面をより広く活用できます。
+### ① 全画面・ツールバー非表示で開く
+上記記載の常駐用URL（末尾に `?embed=true` を付けたURL）で開くと、上部のStreamlitヘッダーなどが最小化され、タブレット画面いっぱいに表示されます。
 ```text
-https://<あなたのアプリ名>.streamlit.app/?embed=true
+https://ngrwi3j3aajjq2qjkugxsh.streamlit.app/?embed=true
 ```
 
 ### ② ホーム画面にブックマーク（アプリ化）
 1. Fire HD標準の **Silkブラウザ** で上記URLを開きます。
 2. 画面右上のメニューアイコン（3点リーダー）をタップします。
-3. **「ホーム画面に追加」** または **「ページを固定」** を選択します。
+3. **「ホーム画面に追加」**（または「ページを固定」）を選択します。
 4. ホーム画面に専用アイコンが生成され、次回から1タップですぐにダッシュボードを全画面風に起動できます。
 
 ### ③ 常駐時の画面スリープ防止（常時オンにする）
@@ -119,13 +64,36 @@ https://<あなたのアプリ名>.streamlit.app/?embed=true
 
 ---
 
+## 🚀 ローカルPCでのテスト実行手順
+
+```bash
+# プロジェクトフォルダに移動
+cd "g:\マイドライブ\Antiglavity\.agent\firehd-ai-dashboard"
+
+# 仮想環境の作成 (任意)
+python -m venv venv
+venv\Scripts\activate
+
+# 依存ライブラリのインストール
+pip install -r requirements.txt
+
+# アプリ起動
+python -m streamlit run app.py
+```
+
+ブラウザで `http://localhost:8501` を開きます。
+
+---
+
 ## 📁 ディレクトリ構成
 
 ```
 firehd-ai-dashboard/
 ├── .streamlit/
-│   └── config.toml       # ダークテーマとUIスタイル設定
-├── app.py                # メインアプリケーション
+│   ├── config.toml       # ダークテーマとUIスタイル設定
+│   └── secrets.toml      # (非公開・Git除外) ローカル用APIキー設定
+├── .gitignore            # secrets.toml等をGitから除外する設定
+├── app.py                # メインアプリケーション（パスワード認証付き）
 ├── requirements.txt      # 依存ライブラリ一覧
 └── README.md             # 本手順書
 ```

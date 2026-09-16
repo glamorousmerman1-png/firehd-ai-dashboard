@@ -291,14 +291,46 @@ if "brainstorm_result" not in st.session_state:
 if "brainstorm_input" not in st.session_state:
     st.session_state["brainstorm_input"] = ""
 
-if "tasks" not in st.session_state:
-    st.session_state["tasks"] = [
+TASKS_DATA_FILE = os.path.join(os.path.dirname(__file__), "tasks_data.json")
+
+def load_shared_tasks_data():
+    """全端末（仕事PC・プライベート端末・タブレット）で共通同期するタスクとAIアドバイスを読み込む"""
+    default_tasks = [
         {"id": 1, "text": "主要プロジェクトの仕様策定", "done": False},
         {"id": 2, "text": "チーム定例ミーティングの準備", "done": False},
         {"id": 3, "text": "日報・タスク棚卸しの実施", "done": True},
     ]
+    if os.path.exists(TASKS_DATA_FILE):
+        try:
+            with open(TASKS_DATA_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data, None, ""
+                elif isinstance(data, dict):
+                    return data.get("tasks", default_tasks), data.get("task_advice", None), data.get("updated_at", "")
+        except Exception:
+            pass
+    return default_tasks, None, ""
+
+def save_shared_tasks_data(tasks, advice=None):
+    """全端末共通のタスクとAIアドバイスをJSONファイルに永続化保存"""
+    now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    data = {
+        "tasks": tasks,
+        "task_advice": advice,
+        "updated_at": now_str
+    }
+    try:
+        with open(TASKS_DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        st.error(f"タスクデータの保存に失敗しました: {e}")
+
+shared_tasks, shared_advice, _ = load_shared_tasks_data()
+if "tasks" not in st.session_state:
+    st.session_state["tasks"] = shared_tasks
 if "task_advice" not in st.session_state:
-    st.session_state["task_advice"] = None
+    st.session_state["task_advice"] = shared_advice
 
 def load_stocks_config():
     """stock-monitorのCSVが存在すればそこから最新読み込み、無ければstocks_config.jsonから読み込む"""
@@ -1745,18 +1777,35 @@ with tab5:
 # タブ6：タスク・アドバイザー（Daily Task Advisor）
 # =============================================================================
 with tab6:
+    # 常に最新の共有タスクデータを読み込み
+    tasks, advice, last_updated = load_shared_tasks_data()
+    st.session_state["tasks"] = tasks
+    if advice is not None:
+        st.session_state["task_advice"] = advice
+
     task_col_left, task_col_right = st.columns([1.1, 1.1], gap="large")
 
     # 左側：ToDoリスト管理
     with task_col_left:
-        st.markdown(
-            """
-            <div style="font-size: 1.15rem; font-weight: 700; color: #F8FAFC; margin-bottom: 8px;">
-                📋 今日のタスク一覧
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        t_head1, t_head2 = st.columns([2.8, 1.4])
+        with t_head1:
+            st.markdown(
+                """
+                <div style="font-size: 1.15rem; font-weight: 700; color: #F8FAFC; margin-bottom: 2px;">
+                    📋 今日のタスク一覧
+                </div>
+                <div style="font-size: 0.8rem; color: #94A3B8; margin-bottom: 8px;">
+                    ☁️ 全端末リアルタイム同期（PC・タブレット・スマホ共通）
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with t_head2:
+            if st.button("🔄 最新同期", key="btn_sync_tasks", help="他端末での更新内容を再読込して画面を最新化します", use_container_width=True):
+                for k in list(st.session_state.keys()):
+                    if k.startswith("task_check_"):
+                        del st.session_state[k]
+                st.rerun()
 
         # タスク追加フォーム
         with st.form(key="add_task_form", clear_on_submit=True):
@@ -1766,29 +1815,36 @@ with tab6:
             with add_col2:
                 submitted = st.form_submit_button("＋ 追加", use_container_width=True)
             if submitted and new_task_text.strip():
-                new_id = max([t["id"] for t in st.session_state["tasks"]], default=0) + 1
-                st.session_state["tasks"].append({"id": new_id, "text": new_task_text.strip(), "done": False})
+                tasks, advice, _ = load_shared_tasks_data()
+                new_id = max([t["id"] for t in tasks], default=0) + 1
+                tasks.append({"id": new_id, "text": new_task_text.strip(), "done": False})
+                st.session_state[f"task_check_{new_id}"] = False
+                save_shared_tasks_data(tasks, advice)
                 st.rerun()
 
         # タスク一覧表示
-        tasks = st.session_state["tasks"]
+        tasks, advice, last_updated = load_shared_tasks_data()
         if not tasks:
             st.info("登録されているタスクはありません。上のフォームから追加してください。")
         else:
             for task in tasks:
                 t_col1, t_col2 = st.columns([4, 1])
                 with t_col1:
+                    if f"task_check_{task['id']}" not in st.session_state:
+                        st.session_state[f"task_check_{task['id']}"] = task["done"]
                     is_done = st.checkbox(
                         task["text"],
-                        value=task["done"],
                         key=f"task_check_{task['id']}",
                     )
                     if is_done != task["done"]:
                         task["done"] = is_done
+                        save_shared_tasks_data(tasks, advice)
                         st.rerun()
                 with t_col2:
                     if st.button("削除", key=f"del_task_{task['id']}", help="このタスクを削除"):
-                        st.session_state["tasks"] = [t for t in tasks if t["id"] != task["id"]]
+                        tasks = [t for t in tasks if t["id"] != task["id"]]
+                        st.session_state.pop(f"task_check_{task['id']}", None)
+                        save_shared_tasks_data(tasks, advice)
                         st.rerun()
 
         st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
@@ -1797,8 +1853,19 @@ with tab6:
             get_advice = st.button("✨ AIアドバイスを生成", key="btn_get_task_advice", use_container_width=True)
         with t_btn_col2:
             if st.button("完了を一括消去", key="btn_clear_done", use_container_width=True):
-                st.session_state["tasks"] = [t for t in tasks if not t["done"]]
+                tasks, advice, _ = load_shared_tasks_data()
+                for t in tasks:
+                    if t["done"]:
+                        st.session_state.pop(f"task_check_{t['id']}", None)
+                tasks = [t for t in tasks if not t["done"]]
+                save_shared_tasks_data(tasks, advice)
                 st.rerun()
+
+        if last_updated:
+            st.markdown(
+                f"<div style='font-size: 0.78rem; color: #64748B; margin-top: 8px; text-align: right;'>🕒 最終同期: {last_updated}</div>",
+                unsafe_allow_html=True,
+            )
 
     # 右側：AIアドバイスパネル
     with task_col_right:
@@ -1812,8 +1879,8 @@ with tab6:
         )
 
         if get_advice:
-            active_tasks = [t["text"] for t in st.session_state["tasks"] if not t["done"]]
-            done_tasks = [t["text"] for t in st.session_state["tasks"] if t["done"]]
+            active_tasks = [t["text"] for t in tasks if not t["done"]]
+            done_tasks = [t["text"] for t in tasks if t["done"]]
 
             if not active_tasks and not done_tasks:
                 st.warning("分析するタスクがありません。先にタスクを登録してください。")
@@ -1849,20 +1916,23 @@ with tab6:
                                 system_instruction=custom_instruction_text if custom_instruction_text else None,
                             ),
                         )
-                        st.session_state["task_advice"] = json.loads(response.text)
+                        new_advice = json.loads(response.text)
+                        st.session_state["task_advice"] = new_advice
+                        save_shared_tasks_data(tasks, new_advice)
+                        st.rerun()
                     except Exception as e:
                         st.error(f"アドバイス生成中にエラーが発生しました: {str(e)}")
 
-        advice = st.session_state.get("task_advice")
-        if advice:
+        advice_to_show = st.session_state.get("task_advice") or advice
+        if advice_to_show:
             st.markdown(
                 f"""<div class="dashboard-card" style="border-left: 4px solid #6366F1;">
 <div style="font-size: 0.95rem; font-weight: 700; color: #818CF8; margin-bottom: 6px;">🔥 最優先で終わらせるべきタスク</div>
-<div style="font-size: 0.92rem; color: #F8FAFC; line-height: 1.5; margin-bottom: 14px;">{advice.get("priority_task", "")}</div>
+<div style="font-size: 0.92rem; color: #F8FAFC; line-height: 1.5; margin-bottom: 14px;">{advice_to_show.get("priority_task", "")}</div>
 <div style="font-size: 0.95rem; font-weight: 700; color: #34D399; margin-bottom: 6px;">⏱️ 進め方 & 段取りのコツ</div>
-<div style="font-size: 0.92rem; color: #F8FAFC; line-height: 1.5; margin-bottom: 14px;">{advice.get("strategy", "")}</div>
+<div style="font-size: 0.92rem; color: #F8FAFC; line-height: 1.5; margin-bottom: 14px;">{advice_to_show.get("strategy", "")}</div>
 <div style="font-size: 0.95rem; font-weight: 700; color: #F472B6; margin-bottom: 6px;">💬 モチベーションメッセージ</div>
-<div style="font-size: 0.92rem; color: #FDE047; font-style: italic; line-height: 1.5;">"{advice.get("motivation", "")}"</div>
+<div style="font-size: 0.92rem; color: #FDE047; font-style: italic; line-height: 1.5;">"{advice_to_show.get("motivation", "")}"</div>
 </div>""",
                 unsafe_allow_html=True,
             )

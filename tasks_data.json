@@ -1,0 +1,21 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "text": "主要プロジェクトの仕様策定",
+      "done": false
+    },
+    {
+      "id": 2,
+      "text": "チーム定例ミーティングの準備",
+      "done": false
+    },
+    {
+      "id": 3,
+      "text": "日報・タスク棚卸しの実施",
+      "done": false
+    }
+  ],
+  "task_advice": null,
+  "updated_at": "2026-09-17 08:48"
+}

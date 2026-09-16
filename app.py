@@ -317,9 +317,22 @@ def load_stocks_config():
                 for row in reader:
                     c = row.get("銘柄コード", "").strip()
                     n = row.get("銘柄名", "").strip()
-                    cat = row.get("カテゴリ", "").strip()
                     if c and n:
-                        holdings.append({"code": c, "name": n, "category": cat})
+                        holdings.append({
+                            "code": c,
+                            "name": n,
+                            "buy_price": row.get("取得単価", "").strip(),
+                            "shares": row.get("株数", "").strip(),
+                            "account_type": row.get("特定口座区分", "").strip(),
+                            "category": row.get("カテゴリ", "").strip(),
+                            "current_price": row.get("最新株価", "").strip(),
+                            "dividend_yield": row.get("配当利回り", "").strip(),
+                            "target_price": row.get("目標株価", "").strip(),
+                            "per": row.get("PER", "").strip(),
+                            "pbr": row.get("PBR", "").strip(),
+                            "profit_val": row.get("評価損益", "").strip(),
+                            "profit_rate": row.get("評価損益率", "").strip(),
+                        })
         except Exception:
             pass
             
@@ -397,6 +410,10 @@ if "stock_discovery_last_updated" not in st.session_state:
     st.session_state["stock_discovery_last_updated"] = None
 if "stock_discovery_title" not in st.session_state:
     st.session_state["stock_discovery_title"] = ""
+if "portfolio_diagnosis_results" not in st.session_state:
+    st.session_state["portfolio_diagnosis_results"] = None
+if "portfolio_diagnosis_last_updated" not in st.session_state:
+    st.session_state["portfolio_diagnosis_last_updated"] = None
 
 # -----------------------------------------------------------------------------
 # トップステータスバー（現在日時・常駐感の演出）
@@ -440,10 +457,11 @@ if not api_key:
 # -----------------------------------------------------------------------------
 # メインタブ構成
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📊 市況ブリーフィング",
     "📈 銘柄ニュース",
-    "🎯 銘柄発掘・スクリーニング",
+    "🎯 銘柄発掘",
+    "💼 ポートフォリオAI診断",
     "💡 思考整理・ブレスト",
     "📝 タスク・アドバイザー",
 ])
@@ -1212,9 +1230,275 @@ Google検索ツールを活用し、2026年直近の最新市場データ、適�
         )
 
 # =============================================================================
-# タブ4：思考整理・ブレスト（Brainstorm & Wall-hit）
+# タブ4：ポートフォリオAI診断・リスク評価（Portfolio Intelligence）
 # =============================================================================
 with tab4:
+    holdings_data = st.session_state.get("stock_holdings", [])
+    watchlist_data = st.session_state.get("stock_watchlist", [])
+
+    # メトリクス計算
+    total_buy_val = 0.0
+    total_cur_val = 0.0
+    total_profit_val = 0.0
+    total_annual_div = 0.0
+    nisa_val = 0.0
+    tokutei_val = 0.0
+    cat_distribution = {}
+    valid_stocks_count = 0
+    stock_shares_list = []
+
+    for s in holdings_data:
+        try:
+            buy_p = float(str(s.get("buy_price", 0)).replace(",", "").strip() or 0)
+            shs = float(str(s.get("shares", 0)).replace(",", "").strip() or 0)
+            cur_p = float(str(s.get("current_price", 0)).replace(",", "").strip() or buy_p or 0)
+            div_s = str(s.get("dividend_yield", "")).replace("%", "").strip()
+            div_y = float(div_s) / 100.0 if div_s and div_s != "-" else 0.0
+
+            b_val = buy_p * shs
+            c_val = cur_p * shs
+            profit = c_val - b_val
+            ann_div = c_val * div_y
+
+            total_buy_val += b_val
+            total_cur_val += c_val
+            total_profit_val += profit
+            total_annual_div += ann_div
+
+            if s.get("account_type") == "NISA":
+                nisa_val += c_val
+            else:
+                tokutei_val += c_val
+
+            cat = s.get("category") or "その他"
+            cat_distribution[cat] = cat_distribution.get(cat, 0.0) + c_val
+
+            if b_val > 0:
+                valid_stocks_count += 1
+                stock_shares_list.append({
+                    "code": s.get("code", ""),
+                    "name": s.get("name", ""),
+                    "cur_val": c_val,
+                    "profit": profit,
+                    "profit_rate": (profit / b_val * 100) if b_val > 0 else 0.0,
+                    "category": cat
+                })
+        except Exception:
+            pass
+
+    total_profit_rate = (total_profit_val / total_buy_val * 100) if total_buy_val > 0 else 0.0
+    avg_dividend_rate = (total_annual_div / total_cur_val * 100) if total_cur_val > 0 else 0.0
+    nisa_ratio = (nisa_val / total_cur_val * 100) if total_cur_val > 0 else 0.0
+
+    # 4つの上部メトリクスカード
+    m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+    with m_col1:
+        st.markdown(
+            f"""
+            <div class="dashboard-card" style="border-top: 4px solid #10B981; padding: 14px 18px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">💰 総資産評価額</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">¥{total_cur_val:,.0f}</div>
+                <div style="font-size: 0.85rem; color: #34D399; margin-top: 4px; font-weight: 600;">
+                    含み益: +¥{total_profit_val:,.0f} (+{total_profit_rate:.1f}%)
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with m_col2:
+        st.markdown(
+            f"""
+            <div class="dashboard-card" style="border-top: 4px solid #6366F1; padding: 14px 18px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">💵 年間予想配当金</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">¥{total_annual_div:,.0f} <span style="font-size: 0.9rem; font-weight: 500; color: #94A3B8;">/年</span></div>
+                <div style="font-size: 0.85rem; color: #818CF8; margin-top: 4px; font-weight: 600;">
+                    平均配当利回り: {avg_dividend_rate:.2f}%
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with m_col3:
+        st.markdown(
+            f"""
+            <div class="dashboard-card" style="border-top: 4px solid #F59E0B; padding: 14px 18px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">🏦 口座別構成比</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">NISA: {nisa_ratio:.1f}%</div>
+                <div style="font-size: 0.85rem; color: #FBBF24; margin-top: 4px; font-weight: 500;">
+                    特定口座: {100 - nisa_ratio:.1f}% (¥{tokutei_val:,.0f})
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with m_col4:
+        top_stock_name = sorted(stock_shares_list, key=lambda x: x["cur_val"], reverse=True)[0]["name"] if stock_shares_list else "-"
+        st.markdown(
+            f"""
+            <div class="dashboard-card" style="border-top: 4px solid #EC4899; padding: 14px 18px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">📊 銘柄数 & 最大比率</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">{len(holdings_data)} 銘柄</div>
+                <div style="font-size: 0.85rem; color: #F472B6; margin-top: 4px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    最大保有: {top_stock_name}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    # 診断実行バー
+    diag_col1, diag_col2 = st.columns([3.5, 1.5])
+    with diag_col1:
+        st.markdown(
+            """
+            <div style="font-size: 0.9rem; color: #94A3B8; margin-top: 10px;">
+                保有30銘柄のセクター・資産配分と、購入検討銘柄（ウォッチリスト97銘柄）をAIが総合照合。<br>
+                <strong>「資産の偏り・弱点」「特定セクターへの集中リスク」「リスクを中和するために今買うべきおすすめ候補」</strong>を客観診断します。
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with diag_col2:
+        st.write("")
+        run_diag_btn = st.button("🩺 AIでポートフォリオを精密診断", key="btn_run_portfolio_diag", use_container_width=True)
+
+    if st.session_state.get("portfolio_diagnosis_last_updated"):
+        st.caption(f"最終診断日時: {st.session_state['portfolio_diagnosis_last_updated']}")
+
+    # AI診断実行ロジック
+    if run_diag_btn:
+        if not client:
+            st.error("APIキーが設定されていません。サイドバーから設定してくださいね。")
+        else:
+            with st.spinner("保有30銘柄とウォッチリスト全97銘柄を照合し、資産リスクと中和策を診断中..."):
+                # 保有銘柄サマリー作成
+                holdings_summary_lines = []
+                for s in holdings_data:
+                    c = s.get("code", "")
+                    n = s.get("name", "")
+                    cat = s.get("category", "")
+                    cp = s.get("current_price", "")
+                    sh = s.get("shares", "")
+                    pr = s.get("profit_rate", "")
+                    div = s.get("dividend_yield", "")
+                    act = s.get("account_type", "")
+                    holdings_summary_lines.append(f"- [{c}] {n} | 業種:{cat} | 評価株価:{cp}円×{sh}株 | 損益率:{pr} | 配当利回り:{div} | {act}")
+                holdings_summary_text = "\n".join(holdings_summary_lines)
+
+                # ウォッチリスト（購入検討銘柄）の代表抜粋
+                watchlist_summary_lines = []
+                for w in watchlist_data[:40]:  # 主要40銘柄を抜粋してトークン効率化
+                    wc = w.get("code", "")
+                    wn = w.get("name", "")
+                    wcat = w.get("category", "")
+                    wdiff = w.get("diff", "")
+                    watchlist_summary_lines.append(f"- [{wc}] {wn} (カテゴリ:{wcat}, 目標乖離:{wdiff})")
+                watchlist_summary_text = "\n".join(watchlist_summary_lines)
+
+                prompt = f"""
+あなたは世界最高峰のチーフポートフォリオマネージャーおよび資産運用ストラテジストです。
+提供されたユーザーの「保有銘柄ポートフォリオ（30銘柄）」および「購入検討銘柄リスト（ウォッチリスト）」を徹底的に分析し、客観的で具体的、かつ実行可能なプロの資産診断レポートを作成してください。
+
+【保有ポートフォリオ数値概要】
+・総評価額: {total_cur_val:,.0f} 円
+・総投資元本: {total_buy_val:,.0f} 円
+・トータル評価損益: {total_profit_val:+,.0f} 円 ({total_profit_rate:+.1f}%)
+・年間予想配当金: {total_annual_div:,.0f} 円 (平均配当利回り: {avg_dividend_rate:.2f}%)
+・口座比率: NISA {nisa_ratio:.1f}% / 特定口座 {100 - nisa_ratio:.1f}%
+
+【保有銘柄一覧（全30銘柄）】
+{holdings_summary_text}
+
+【ユーザーが関心を持っている購入検討銘柄（ウォッチリスト抜粋）】
+{watchlist_summary_text}
+
+【出力要件】
+親身でわかりやすく、かつ鋭いプロの視点で、以下のMarkdownフォーマットに厳格に従って出力してください。
+各見出し（### 1. ..., ### 2. ...）を明確に記載してください。
+
+### 1. 🎯 総合診断スコア & ポートフォリオの強み
+- **総合ヘルススコア**: ★★★★☆（5段階評価で星を記載）
+- **現在のポートフォリオの優れた点・強み**:
+  （大きな含み益が出ている点、高配当銘柄の確保、優良企業の保有など具体的に2〜3点解説）
+
+### 2. ⚠️ 資産の偏り & 潜在リスク（弱点の徹底分析）
+- **アセットクラスの偏り（最重要課題）**:
+  （日本株・東証上場株がほぼ100%であり、米国株・全世界株やコモディティ、債券等の海外・異種アセット分散が圧倒的に不足している点を具体的に指摘）
+- **特定銘柄への過大集中リスク**:
+  （三菱重工、NXHDなど上位数銘柄だけで全体の大部分を占めている集中度リスクを指摘）
+- **セクター・業種の偏りリスク**:
+  （外食チェーンが4銘柄（マクドナルド、サイゼリヤ、王将、コメダ）と多めで原材料高や人件費高騰リスクが重なっている点、重工業・製造業比率の高さなど）
+
+### 3. 🛡️ リスク中和のための具体的処方箋
+- **どのようなアセット・セクターを買い増すべきか**:
+  （現在の偏りを中和・相殺するために、今後優先的にポートフォリオに組み入れるべき業種や資産クラスを2〜3点提示）
+
+### 4. ⭐ ウォッチリストから厳選！ポートフォリオの穴を埋めるおすすめ候補
+ユーザーが登録している「購入検討銘柄（ウォッチリスト）」の中から、**現在のポートフォリオのリスクを中和・補完するのに最も効果的な銘柄を2〜3銘柄厳選**して推薦してください。
+
+#### おすすめ銘柄: [証券コード] [銘柄名]
+- **カテゴリ**: [カテゴリ名]
+- **この銘柄を選ぶ理由（中和・補完効果）**:
+  （現在の保有株とどう相関が低く、どのリスクをヘッジ・補強できるのかを明確に解説）
+- **投資判断の着眼点**:
+  （目標株価との乖離やエントリーの考え方）
+
+### 5. 🌐 ポートフォリオ外からの分散アイデア（海外・オルタナティブ等）
+- （米国高配当株ETF、全世界株インデックス、金ETFなど、ウォッチリスト外で長期的に検討すべきアセットの提案）
+"""
+                try:
+                    custom_instruction_text = get_custom_instructions()
+                    config = types.GenerateContentConfig(
+                        temperature=0.3,
+                        tools=[{"google_search": {}}],
+                        system_instruction=custom_instruction_text if custom_instruction_text else None,
+                    )
+                    
+                    response = None
+                    last_error = None
+                    for attempt in range(3):
+                        try:
+                            response = client.models.generate_content(
+                                model=MODEL_NAME,
+                                contents=prompt,
+                                config=config,
+                            )
+                            if response and response.text:
+                                break
+                        except Exception as e:
+                            last_error = e
+                            time.sleep(2)
+
+                    if not response or not response.text:
+                        raise last_error or Exception("ポートフォリオ診断に失敗しました。")
+
+                    st.session_state["portfolio_diagnosis_results"] = response.text
+                    st.session_state["portfolio_diagnosis_last_updated"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"診断中にエラーが発生しました: {str(e)}")
+
+    # 診断結果の表示
+    diag_res = st.session_state.get("portfolio_diagnosis_results")
+    if diag_res:
+        with st.container(border=True):
+            st.markdown(diag_res)
+    else:
+        st.markdown(
+            """
+            <div style="background-color: #1E293B; border: 2px dashed #334155; border-radius: 14px; padding: 40px; text-align: center; color: #94A3B8; margin-top: 10px;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">💼</div>
+                <div style="font-size: 1.1rem; font-weight: 600; color: #F1F5F9;">ポートフォリオ診断がまだ実行されていません</div>
+                <div style="font-size: 0.9rem; margin-top: 6px;">上の「AIでポートフォリオを精密診断」ボタンを押すと、保有30銘柄の偏りやリスク、ウォッチリストからの推奨補完銘柄をプロ目線で分析します。</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+# =============================================================================
+# タブ5：思考整理・ブレスト（Brainstorm & Wall-hit）
+# =============================================================================
+with tab5:
     st.markdown(
         """
         <div style="font-size: 0.95rem; color: #94A3B8; margin-bottom: 10px;">
@@ -1377,9 +1661,9 @@ with tab4:
             )
 
 # =============================================================================
-# タブ5：タスク・アドバイザー（Daily Task Advisor）
+# タブ6：タスク・アドバイザー（Daily Task Advisor）
 # =============================================================================
-with tab5:
+with tab6:
     task_col_left, task_col_right = st.columns([1.1, 1.1], gap="large")
 
     # 左側：ToDoリスト管理

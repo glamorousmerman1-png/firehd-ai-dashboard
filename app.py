@@ -357,21 +357,29 @@ def load_stocks_config():
         except Exception:
             pass
             
-    # 2. クラウド環境（Streamlit Cloud）などCSVが無い場合はstocks_config.jsonを使用
-    if not holdings or not watchlist:
-        config_path = os.path.join(os.path.dirname(__file__), "stocks_config.json")
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if not holdings:
-                        holdings = data.get("holdings", [])
-                    if not watchlist:
-                        watchlist = data.get("watchlist", [])
-            except Exception:
-                pass
+    # stocks_config.json から追加資産情報（米国株、投資信託、DC年金等）を取得
+    other_assets = {
+        "us_stocks": 4590000,
+        "mutual_funds": 4430000,
+        "dc_pension": 3830000,
+        "bonds_other": 200000,
+        "memo": "米国株式、積立投資信託、確定拠出年金(DC:外国株・債券等)"
+    }
+    config_path = os.path.join(os.path.dirname(__file__), "stocks_config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if not holdings:
+                    holdings = data.get("holdings", [])
+                if not watchlist:
+                    watchlist = data.get("watchlist", [])
+                if "other_assets" in data:
+                    other_assets = data["other_assets"]
+        except Exception:
+            pass
                 
-    return {"holdings": holdings, "watchlist": watchlist}
+    return {"holdings": holdings, "watchlist": watchlist, "other_assets": other_assets}
 
 def save_watchlist_config(watchlist_items):
     """ウォッチリストをstocks_config.jsonに保存して永続化"""
@@ -387,11 +395,33 @@ def save_watchlist_config(watchlist_items):
     except Exception:
         pass
 
+def save_other_assets_config(other_assets):
+    """日本株以外の資産（米国株、投資信託、DC等）をstocks_config.jsonに保存して永続化"""
+    config_path = os.path.join(os.path.dirname(__file__), "stocks_config.json")
+    try:
+        data = {}
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        data["other_assets"] = other_assets
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
 default_stocks = load_stocks_config()
 if "stock_holdings" not in st.session_state:
     st.session_state["stock_holdings"] = default_stocks.get("holdings", [])
 if "stock_watchlist" not in st.session_state:
     st.session_state["stock_watchlist"] = default_stocks.get("watchlist", [])
+if "other_assets" not in st.session_state:
+    st.session_state["other_assets"] = default_stocks.get("other_assets", {
+        "us_stocks": 4590000,
+        "mutual_funds": 4430000,
+        "dc_pension": 3830000,
+        "bonds_other": 200000,
+        "memo": "米国株式、積立投資信託、確定拠出年金(DC:外国株・債券等)"
+    })
 if "stock_news_results" not in st.session_state:
     st.session_state["stock_news_results"] = None
 if "stock_news_markdown" not in st.session_state:
@@ -1235,8 +1265,9 @@ Google検索ツールを活用し、2026年直近の最新市場データ、適�
 with tab4:
     holdings_data = st.session_state.get("stock_holdings", [])
     watchlist_data = st.session_state.get("stock_watchlist", [])
+    other_assets = st.session_state.get("other_assets", {})
 
-    # メトリクス計算
+    # 日本株（個別株）メトリクス計算
     total_buy_val = 0.0
     total_cur_val = 0.0
     total_profit_val = 0.0
@@ -1288,18 +1319,29 @@ with tab4:
 
     total_profit_rate = (total_profit_val / total_buy_val * 100) if total_buy_val > 0 else 0.0
     avg_dividend_rate = (total_annual_div / total_cur_val * 100) if total_cur_val > 0 else 0.0
-    nisa_ratio = (nisa_val / total_cur_val * 100) if total_cur_val > 0 else 0.0
 
-    # 4つの上部メトリクスカード
+    # 日本株以外の保有・積立資産（米国株、投資信託、確定拠出年金等）の計算
+    us_stocks_val = float(other_assets.get("us_stocks", 4590000))
+    mutual_funds_val = float(other_assets.get("mutual_funds", 4430000))
+    dc_pension_val = float(other_assets.get("dc_pension", 3830000))
+    bonds_val = float(other_assets.get("bonds_other", 200000))
+    total_other_val = us_stocks_val + mutual_funds_val + dc_pension_val + bonds_val
+
+    # 総資産額と構成比率
+    grand_total_val = total_cur_val + total_other_val
+    japan_stock_ratio = (total_cur_val / grand_total_val * 100) if grand_total_val > 0 else 0.0
+    other_assets_ratio = (total_other_val / grand_total_val * 100) if grand_total_val > 0 else 0.0
+
+    # 4つの上部メトリクスカード（総資産全体を可視化）
     m_col1, m_col2, m_col3, m_col4 = st.columns(4)
     with m_col1:
         st.markdown(
             f"""
             <div class="dashboard-card" style="border-top: 4px solid #10B981; padding: 14px 18px;">
-                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">💰 総資産評価額</div>
-                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">¥{total_cur_val:,.0f}</div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">💰 総資産評価額（全体）</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">¥{grand_total_val:,.0f}</div>
                 <div style="font-size: 0.85rem; color: #34D399; margin-top: 4px; font-weight: 600;">
-                    含み益: +¥{total_profit_val:,.0f} (+{total_profit_rate:.1f}%)
+                    日本株含み益: +¥{total_profit_val:,.0f} (+{total_profit_rate:.1f}%)
                 </div>
             </div>
             """,
@@ -1308,11 +1350,11 @@ with tab4:
     with m_col2:
         st.markdown(
             f"""
-            <div class="dashboard-card" style="border-top: 4px solid #6366F1; padding: 14px 18px;">
-                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">💵 年間予想配当金</div>
-                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">¥{total_annual_div:,.0f} <span style="font-size: 0.9rem; font-weight: 500; color: #94A3B8;">/年</span></div>
-                <div style="font-size: 0.85rem; color: #818CF8; margin-top: 4px; font-weight: 600;">
-                    平均配当利回り: {avg_dividend_rate:.2f}%
+            <div class="dashboard-card" style="border-top: 4px solid #3B82F6; padding: 14px 18px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">🇯🇵 国内株式（現物）</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">{japan_stock_ratio:.1f}%</div>
+                <div style="font-size: 0.85rem; color: #60A5FA; margin-top: 4px; font-weight: 500;">
+                    ¥{total_cur_val:,.0f} ({len(holdings_data)}銘柄)
                 </div>
             </div>
             """,
@@ -1321,30 +1363,61 @@ with tab4:
     with m_col3:
         st.markdown(
             f"""
-            <div class="dashboard-card" style="border-top: 4px solid #F59E0B; padding: 14px 18px;">
-                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">🏦 口座別構成比</div>
-                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">NISA: {nisa_ratio:.1f}%</div>
-                <div style="font-size: 0.85rem; color: #FBBF24; margin-top: 4px; font-weight: 500;">
-                    特定口座: {100 - nisa_ratio:.1f}% (¥{tokutei_val:,.0f})
+            <div class="dashboard-card" style="border-top: 4px solid #8B5CF6; padding: 14px 18px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">🌏 海外・積立資産比率</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">{other_assets_ratio:.1f}%</div>
+                <div style="font-size: 0.85rem; color: #A78BFA; margin-top: 4px; font-weight: 500;">
+                    ¥{total_other_val:,.0f} (米国株・投信・DC)
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
     with m_col4:
-        top_stock_name = sorted(stock_shares_list, key=lambda x: x["cur_val"], reverse=True)[0]["name"] if stock_shares_list else "-"
         st.markdown(
             f"""
-            <div class="dashboard-card" style="border-top: 4px solid #EC4899; padding: 14px 18px;">
-                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">📊 銘柄数 & 最大比率</div>
-                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">{len(holdings_data)} 銘柄</div>
-                <div style="font-size: 0.85rem; color: #F472B6; margin-top: 4px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                    最大保有: {top_stock_name}
+            <div class="dashboard-card" style="border-top: 4px solid #F59E0B; padding: 14px 18px;">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase;">💵 年間予想配当金</div>
+                <div style="font-size: 1.55rem; font-weight: 800; color: #F8FAFC; margin-top: 4px;">¥{total_annual_div:,.0f} <span style="font-size: 0.85rem; font-weight: 500; color: #94A3B8;">/年</span></div>
+                <div style="font-size: 0.85rem; color: #FBBF24; margin-top: 4px; font-weight: 600;">
+                    日本株平均利回り: {avg_dividend_rate:.2f}%
                 </div>
             </div>
             """,
             unsafe_allow_html=True
         )
+
+    # 日本株以外の保有・積立資産の設定・確認アコーディオン
+    with st.expander("🌍 日本株以外の保有・積立資産（米国株・投資信託・DC年金など）の確認・編集"):
+        st.markdown(
+            """
+            <div style="font-size: 0.86rem; color: #94A3B8; margin-bottom: 8px;">
+                日本株以外の資産（米国株、積立投信、確定拠出年金など）の現在評価額です。金額を変更して「設定を保存」を押すと、AI診断や全体比率に即座に反映されます。
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        oa_col1, oa_col2, oa_col3, oa_col4 = st.columns(4)
+        with oa_col1:
+            in_us = st.number_input("🇺🇸 米国株式 (円)", value=int(us_stocks_val), step=100000, key="in_oa_us")
+        with oa_col2:
+            in_mf = st.number_input("📈 投資信託・積立 (円)", value=int(mutual_funds_val), step=100000, key="in_oa_mf")
+        with oa_col3:
+            in_dc = st.number_input("🏛️ 確定拠出年金 DC (円)", value=int(dc_pension_val), step=100000, key="in_oa_dc")
+        with oa_col4:
+            in_bd = st.number_input("🏷️ 債券・その他 (円)", value=int(bonds_val), step=50000, key="in_oa_bd")
+        
+        if st.button("💾 日本株以外の資産設定を保存", key="btn_save_other_assets"):
+            st.session_state["other_assets"] = {
+                "us_stocks": in_us,
+                "mutual_funds": in_mf,
+                "dc_pension": in_dc,
+                "bonds_other": in_bd,
+                "memo": "米国株式、積立投資信託、確定拠出年金(DC:外国株・債券等)"
+            }
+            save_other_assets_config(st.session_state["other_assets"])
+            st.success("日本株以外の資産情報を保存しました！")
+            st.rerun()
 
     # 診断実行バー
     diag_col1, diag_col2 = st.columns([3.5, 1.5])
@@ -1352,8 +1425,8 @@ with tab4:
         st.markdown(
             """
             <div style="font-size: 0.9rem; color: #94A3B8; margin-top: 10px;">
-                保有30銘柄のセクター・資産配分と、購入検討銘柄（ウォッチリスト97銘柄）をAIが総合照合。<br>
-                <strong>「資産の偏り・弱点」「特定セクターへの集中リスク」「リスクを中和するために今買うべきおすすめ候補」</strong>を客観診断します。
+                <strong>日本株（約74%）と海外・積立資産（約26%）の全体バランス</strong>、および日本株内部のセクター偏り、ウォッチリスト（97銘柄）をAIが総合照合。<br>
+                <strong>「資産全体の偏り・弱点」「特定セクターへの集中リスク」「リスクを中和するために今買うべきおすすめ候補」</strong>を客観診断します。
             </div>
             """,
             unsafe_allow_html=True
@@ -1370,7 +1443,7 @@ with tab4:
         if not client:
             st.error("APIキーが設定されていません。サイドバーから設定してくださいね。")
         else:
-            with st.spinner("保有30銘柄とウォッチリスト全97銘柄を照合し、資産リスクと中和策を診断中..."):
+            with st.spinner("日本株30銘柄、海外・積立資産、ウォッチリスト全97銘柄を照合し、資産リスクと中和策を診断中..."):
                 # 保有銘柄サマリー作成
                 holdings_summary_lines = []
                 for s in holdings_data:
@@ -1397,20 +1470,27 @@ with tab4:
 
                 prompt = f"""
 あなたは世界最高峰のチーフポートフォリオマネージャーおよび資産運用ストラテジストです。
-提供されたユーザーの「保有銘柄ポートフォリオ（30銘柄）」および「購入検討銘柄リスト（ウォッチリスト）」を徹底的に分析し、客観的で具体的、かつ実行可能なプロの資産診断レポートを作成してください。
+提供されたユーザーの「総資産配分（日本株＋米国株・積立投信・確定拠出年金DC）」、「日本株保有ポートフォリオ（30銘柄）」、および「購入検討銘柄リスト（ウォッチリスト）」を徹底的に分析し、客観的で具体的、かつ親身で実行可能なプロの資産診断レポートを作成してください。
 
-【保有ポートフォリオ数値概要】
-・総評価額: {total_cur_val:,.0f} 円
-・総投資元本: {total_buy_val:,.0f} 円
-・トータル評価損益: {total_profit_val:+,.0f} 円 ({total_profit_rate:+.1f}%)
-・年間予想配当金: {total_annual_div:,.0f} 円 (平均配当利回り: {avg_dividend_rate:.2f}%)
-・口座比率: NISA {nisa_ratio:.1f}% / 特定口座 {100 - nisa_ratio:.1f}%
+【ユーザーの総資産ポートフォリオ構成（全体像）】
+・総資産評価額: 約 {grand_total_val:,.0f} 円
+  ├ 1. 日本株個別株（全30銘柄）: 約 {total_cur_val:,.0f} 円 ({japan_stock_ratio:.1f}%) ── 含み益: +¥{total_profit_val:,.0f} ({total_profit_rate:+.1f}%), 年間予想配当金: ¥{total_annual_div:,.0f} (利回り {avg_dividend_rate:.2f}%)
+  └ 2. 海外・積立資産合計: 約 {total_other_val:,.0f} 円 ({other_assets_ratio:.1f}%)
+      ├ 米国株式: 約 {us_stocks_val:,.0f} 円
+      ├ 投資信託・積立: 約 {mutual_funds_val:,.0f} 円
+      ├ 確定拠出年金（企業型DC/iDeCo: 外国株式インデックス・新興国債券・バランス型等）: 約 {dc_pension_val:,.0f} 円
+      └ 債券・その他: 約 {bonds_val:,.0f} 円
 
-【保有銘柄一覧（全30銘柄）】
+【日本株保有銘柄一覧（全30銘柄）】
 {holdings_summary_text}
 
 【ユーザーが関心を持っている購入検討銘柄（ウォッチリスト抜粋）】
 {watchlist_summary_text}
+
+【重要指示・前提】
+・ユーザーは日本株だけでなく、米国株式や投資信託、確定拠出年金（外国株・債券等）もしっかり積立・保有されています。そのため「海外資産がゼロである」といった誤った診断は絶対にしないでください。
+・全体の約74%を占める日本株個別株のウエイトの適正度、および日本株内部のセクター偏り（外食チェーン4社の重なり、重工・製造業の景気循環リスク、特定銘柄への集中）を主眼として鋭く客観的に分析してください。
+・リスクを中和・相殺するために、登録されているウォッチリスト（97銘柄）の中から最も効果的な補完銘柄を推薦してください。
 
 【出力要件】
 親身でわかりやすく、かつ鋭いプロの視点で、以下のMarkdownフォーマットに厳格に従って出力してください。
@@ -1419,19 +1499,19 @@ with tab4:
 ### 1. 🎯 総合診断スコア & ポートフォリオの強み
 - **総合ヘルススコア**: ★★★★☆（5段階評価で星を記載）
 - **現在のポートフォリオの優れた点・強み**:
-  （大きな含み益が出ている点、高配当銘柄の確保、優良企業の保有など具体的に2〜3点解説）
+  （総資産約5,100万円超で、米国株やDC積立も並行して行っている点、日本株で大きな含み益が出ている点、高配当銘柄の確保など具体的に解説）
 
-### 2. ⚠️ 資産の偏り & 潜在リスク（弱点の徹底分析）
-- **アセットクラスの偏り（最重要課題）**:
-  （日本株・東証上場株がほぼ100%であり、米国株・全世界株やコモディティ、債券等の海外・異種アセット分散が圧倒的に不足している点を具体的に指摘）
+### 2. ⚠️ 資産の偏り & 潜在リスク（弱点の客観分析）
+- **全体アセット配分の視点**:
+  （米国株や投信・DC積立を保有しているものの、全体資産の約74%が日本株個別株に集中しているため、日本市場全体の地合い・円高への感応度が高い点を指摘）
 - **特定銘柄への過大集中リスク**:
-  （三菱重工、NXHDなど上位数銘柄だけで全体の大部分を占めている集中度リスクを指摘）
+  （三菱重工、NXHDなど上位銘柄だけで日本株の過半を占めている集中度リスクを指摘）
 - **セクター・業種の偏りリスク**:
   （外食チェーンが4銘柄（マクドナルド、サイゼリヤ、王将、コメダ）と多めで原材料高や人件費高騰リスクが重なっている点、重工業・製造業比率の高さなど）
 
 ### 3. 🛡️ リスク中和のための具体的処方箋
 - **どのようなアセット・セクターを買い増すべきか**:
-  （現在の偏りを中和・相殺するために、今後優先的にポートフォリオに組み入れるべき業種や資産クラスを2〜3点提示）
+  （現在の偏りを中和・相殺するために、今後優先的に組み入れるべき業種や資産クラスを2〜3点提示）
 
 ### 4. ⭐ ウォッチリストから厳選！ポートフォリオの穴を埋めるおすすめ候補
 ユーザーが登録している「購入検討銘柄（ウォッチリスト）」の中から、**現在のポートフォリオのリスクを中和・補完するのに最も効果的な銘柄を2〜3銘柄厳選**して推薦してください。
@@ -1443,8 +1523,8 @@ with tab4:
 - **投資判断の着眼点**:
   （目標株価との乖離やエントリーの考え方）
 
-### 5. 🌐 ポートフォリオ外からの分散アイデア（海外・オルタナティブ等）
-- （米国高配当株ETF、全世界株インデックス、金ETFなど、ウォッチリスト外で長期的に検討すべきアセットの提案）
+### 5. 🌐 今後の資産運用アドバイス（積立・リバランス戦略）
+- （米国株や投信積立、確定拠出年金と日本株個別株を組み合わせた、今後の無理のない運用・リバランス方針のアドバイス）
 """
                 try:
                     custom_instruction_text = get_custom_instructions()
@@ -1489,11 +1569,12 @@ with tab4:
             <div style="background-color: #1E293B; border: 2px dashed #334155; border-radius: 14px; padding: 40px; text-align: center; color: #94A3B8; margin-top: 10px;">
                 <div style="font-size: 2rem; margin-bottom: 10px;">💼</div>
                 <div style="font-size: 1.1rem; font-weight: 600; color: #F1F5F9;">ポートフォリオ診断がまだ実行されていません</div>
-                <div style="font-size: 0.9rem; margin-top: 6px;">上の「AIでポートフォリオを精密診断」ボタンを押すと、保有30銘柄の偏りやリスク、ウォッチリストからの推奨補完銘柄をプロ目線で分析します。</div>
+                <div style="font-size: 0.9rem; margin-top: 6px;">上の「AIでポートフォリオを精密診断」ボタンを押すと、日本株と海外・積立資産の全体バランス、保有株の偏りやリスク、ウォッチリストからの推奨補完銘柄をプロ目線で分析します。</div>
             </div>
             """,
             unsafe_allow_html=True
         )
+
 
 # =============================================================================
 # タブ5：思考整理・ブレスト（Brainstorm & Wall-hit）

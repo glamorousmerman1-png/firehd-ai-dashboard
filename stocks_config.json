@@ -1131,5 +1131,12 @@
       "diff": "-",
       "memo": "その他 (目標乖離: -)"
     }
-  ]
+  ],
+  "other_assets": {
+    "us_stocks": 4590000,
+    "mutual_funds": 4430000,
+    "dc_pension": 3830000,
+    "bonds_other": 200000,
+    "memo": "米国株式、積立投資信託、確定拠出年金(DC:外国株・債券等)"
+  }
 }

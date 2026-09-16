@@ -1,6 +1,8 @@
 import datetime
 import json
 import os
+import re
+import time
 import streamlit as st
 from google import genai
 from google.genai import types
@@ -358,6 +360,20 @@ def load_stocks_config():
                 
     return {"holdings": holdings, "watchlist": watchlist}
 
+def save_watchlist_config(watchlist_items):
+    """ウォッチリストをstocks_config.jsonに保存して永続化"""
+    config_path = os.path.join(os.path.dirname(__file__), "stocks_config.json")
+    try:
+        data = {}
+        if os.path.exists(config_path):
+            with open(config_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        data["watchlist"] = watchlist_items
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
 default_stocks = load_stocks_config()
 if "stock_holdings" not in st.session_state:
     st.session_state["stock_holdings"] = default_stocks.get("holdings", [])
@@ -365,6 +381,10 @@ if "stock_watchlist" not in st.session_state:
     st.session_state["stock_watchlist"] = default_stocks.get("watchlist", [])
 if "stock_news_results" not in st.session_state:
     st.session_state["stock_news_results"] = None
+if "stock_news_markdown" not in st.session_state:
+    st.session_state["stock_news_markdown"] = None
+if "stock_news_sources" not in st.session_state:
+    st.session_state["stock_news_sources"] = []
 if "stock_news_last_updated" not in st.session_state:
     st.session_state["stock_news_last_updated"] = None
 if "stock_selected_tab_mode" not in st.session_state:
@@ -552,16 +572,18 @@ with tab1:
 # タブ2：銘柄ニュース・材料（Stock Intelligence）
 # =============================================================================
 with tab2:
-    col_s_mode, col_s_mgmt = st.columns([2.2, 1.8])
+    col_s_mode, col_s_mgmt = st.columns([2.8, 1.2])
     with col_s_mode:
         stock_mode = st.radio(
             "対象カテゴリ",
-            ["💼 保有銘柄 (ポートフォリオ)", "⭐ 購入検討銘柄 (ウォッチリスト)"],
+            ["💼 保有銘柄 (ポートフォリオ)", "⭐ 購入検討銘柄 (ウォッチリスト)", "🔎 自由検索 (リスト外の銘柄)"],
             horizontal=True,
             label_visibility="collapsed",
             key="rad_stock_mode",
         )
+    is_portfolio = "保有銘柄" in stock_mode
     is_watchlist = "購入検討銘柄" in stock_mode
+    is_free_search = "自由検索" in stock_mode
 
     # 購入検討銘柄の追加・管理（ウォッチリスト時のみ表示）
     if is_watchlist:
@@ -585,6 +607,7 @@ with tab2:
                         "name": new_name.strip(),
                         "memo": new_memo.strip() or "購入検討"
                     })
+                    save_watchlist_config(st.session_state["stock_watchlist"])
                     st.success(f"{new_name.strip()} ({new_code.strip()}) をウォッチリストに追加しました！")
                     st.rerun()
                 else:
@@ -598,154 +621,224 @@ with tab2:
                     with del_cols[col_idx]:
                         if st.button(f"🗑️ {s['code']} {s['name']}", key=f"del_wl_{s['code']}", help="クリックで削除"):
                             st.session_state["stock_watchlist"] = [item for item in st.session_state["stock_watchlist"] if item["code"] != s["code"]]
+                            save_watchlist_config(st.session_state["stock_watchlist"])
                             st.rerun()
 
-    # 銘柄選択セレクター
-    current_list = st.session_state["stock_watchlist"] if is_watchlist else st.session_state["stock_holdings"]
-    stock_options = [f"{s['code']} {s['name']}" for s in current_list]
+    # 銘柄選択または自由検索の入力
+    targets_to_analyze = []
+    execute_search = False
 
-    if not is_watchlist:
-        default_selected = [opt for opt in stock_options if any(c in opt for c in ["7011", "5803", "9147", "6501", "8316", "2914"])]
-    else:
-        default_selected = stock_options[:4]
-
-    sel_col1, sel_col2 = st.columns([3.5, 1.5])
-    with sel_col1:
-        selected_stocks = st.multiselect(
-            "分析対象銘柄（最大6銘柄推奨）",
-            options=stock_options,
-            default=default_selected,
-            key=f"mselect_stocks_{'wl' if is_watchlist else 'hold'}",
-            help="最新ニュース・適時開示・材料を分析したい銘柄を選んでください"
+    if is_free_search:
+        st.markdown(
+            """
+            <div style="font-size: 0.88rem; color: #94A3B8; margin-bottom: 6px;">
+                リスト外の企業でも、銘柄コードや会社名（例: 6526 ソシオネクスト、テスラ、Apple など）を入力して、最新ニュース・開示情報をGoogle検索から即座に調査できます。
+            </div>
+            """,
+            unsafe_allow_html=True
         )
-    with sel_col2:
-        st.write("")
-        btn_update_stock_news = st.button("🔍 銘柄ニュースをAI要約更新", key="btn_update_stock_news", use_container_width=True)
+        f_in_col, f_btn_col = st.columns([3.5, 1.5])
+        with f_in_col:
+            free_query = st.text_input(
+                "検索する銘柄（コードまたは社名）",
+                placeholder="例: 6526 ソシオネクスト、テスラ、任天堂、9984 ソフトバンクG など",
+                key="in_free_stock_query",
+                label_visibility="collapsed"
+            )
+        with f_btn_col:
+            execute_search = st.button("🔍 最新ニュース・材料を検索", key="btn_search_free_stock", use_container_width=True)
+        
+        if execute_search and free_query.strip():
+            targets_to_analyze = [free_query.strip()]
+        elif execute_search and not free_query.strip():
+            st.warning("調べたい銘柄名またはコードを入力してくださいね。")
+    else:
+        current_list = st.session_state["stock_watchlist"] if is_watchlist else st.session_state["stock_holdings"]
+        stock_options = [f"{s['code']} {s['name']}" for s in current_list]
+
+        if not is_watchlist:
+            default_selected = [opt for opt in stock_options if any(c in opt for c in ["7011", "5803", "9147", "6501", "8316", "2914"])]
+        else:
+            default_selected = stock_options[:4]
+
+        sel_col1, sel_col2 = st.columns([3.5, 1.5])
+        with sel_col1:
+            selected_stocks = st.multiselect(
+                "分析対象銘柄（最大6銘柄推奨）",
+                options=stock_options,
+                default=default_selected,
+                key=f"mselect_stocks_{'wl' if is_watchlist else 'hold'}",
+                help="最新ニュース・適時開示・材料を分析したい銘柄を選んでください",
+                label_visibility="collapsed"
+            )
+        with sel_col2:
+            execute_search = st.button("🔍 銘柄ニュースをAI要約更新", key="btn_update_stock_news", use_container_width=True)
+        
+        if execute_search and selected_stocks:
+            targets_to_analyze = selected_stocks
+        elif execute_search and not selected_stocks:
+            st.warning("分析する銘柄を少なくとも1つ選んでくださいね。")
 
     if st.session_state["stock_news_last_updated"]:
-        st.caption(f"最終更新: {st.session_state['stock_news_last_updated']}")
+        st.caption(f"最終更新: {st.session_state['stock_news_last_updated']}（Google Web検索グラウンディング連携）")
     else:
-        st.caption("ボタンを押すと、選択した銘柄の最新ニュース、決算・適時開示、材料をAIが要約します。")
+        st.caption("ボタンを押すと、Google Web検索を活用して対象銘柄の最新ニュース、適時開示、株価材料をリアルタイムに調査します。")
 
-    # AI分析実行
-    if btn_update_stock_news:
-        if not selected_stocks:
-            st.warning("分析する銘柄を少なくとも1つ選択してください。")
-        elif not client:
-            st.error("APIキーが設定されていません。サイドバーから設定してください。")
+    # AI分析実行（Google Search Grounding）
+    if execute_search and targets_to_analyze:
+        if not client:
+            st.error("APIキーが設定されていません。サイドバーから設定してくださいね。")
         else:
-            with st.spinner("各銘柄の最新ニュース、決算・適時開示、市況材料を調査・分析中..."):
-                target_str = "\n".join([f"- {s}" for s in selected_stocks])
+            with st.spinner("Google検索と連携して、最新ニュース・適時開示・元記事リンクを調査中..."):
+                target_str = "\n".join([f"- {s}" for s in targets_to_analyze])
                 prompt = f"""
-                あなたは一流の株式・証券アナリストです。
-                以下の対象銘柄について、直近の重要ニュース、決算発表・業績動向、適時開示、株価材料（ポジティブ要因 / リスク要因）、および今後の投資判断に向けたインサイトを分析・要約してください。
+あなたは一流の株式・証券アナリストです。
+Google検索ツールを活用し、以下の対象銘柄に関する【直近最新のニュース、決算発表・業績動向、適時開示、株価材料】を徹底調査し、詳しく分析・要約してください。
 
-                【対象銘柄】
-                {target_str}
+【対象銘柄】
+{target_str}
 
-                【出力形式】
-                以下のキーを持つJSONオブジェクトのみを出力してください（Markdownコードブロック不要、純粋なJSONテキスト）。
-                {{
-                    "stocks": [
-                        {{
-                            "code": "銘柄コード（例: 7011）",
-                            "name": "銘柄名（例: 三菱重工業）",
-                            "badge": "好材料" または "堅調" または "中立" または "警戒" または "決算注目",
-                            "summary": "直近の重要ニュース・適時開示・材料の要約（2〜3行で簡潔に）",
-                            "positive_points": [
-                                "好材料・強み1",
-                                "好材料・強み2"
-                            ],
-                            "risk_points": [
-                                "懸念点・リスク1",
-                                "懸念点・リスク2"
-                            ],
-                            "insight": "保有継続や新規購入検討に向けたAIインサイト（2〜3文）"
-                        }}
-                    ]
-                }}
-                """
+【重要出力要件】
+・各銘柄について、必ず以下のMarkdownフォーマットに厳格に従って出力してください。
+・各銘柄の先頭は必ず「### [銘柄コードまたは略称] [銘柄名]」で始めてください。
+・気になった際にユーザーが元記事を直接読めるよう、「🔗 参照元ニュース記事・情報源」に参照したWeb記事のタイトルとURLをMarkdownリンク `[記事見出しや媒体名](URL)` で必ず記載してください。
+
+### [銘柄コードまたは略称] [銘柄名]
+- **状況ステータス**: 【好材料】または【堅調】または【中立】または【警戒】または【決算注目】
+- **直近の最新ニュース・適時開示**:
+  （直近の具体的な出来事、日付、発表内容などを2〜3文で簡潔に）
+- **好材料・強み**:
+  - （材料や株価プラス要因1）
+  - （材料や株価プラス要因2）
+- **懸念点・リスク**:
+  - （リスク要因や注意点）
+- **AIインサイト・投資視点**:
+  （保有継続や新規投資判断に向けたプロの着眼点を2〜3文で）
+- **🔗 参照元ニュース記事・情報源**:
+  - [記事タイトルや媒体名](URL)
+  - [記事タイトルや媒体名](URL)
+"""
                 try:
                     custom_instruction_text = get_custom_instructions()
-                    response = client.models.generate_content(
-                        model=MODEL_NAME,
-                        contents=prompt,
-                        config=types.GenerateContentConfig(
-                            response_mime_type="application/json",
-                            temperature=0.7,
-                            system_instruction=custom_instruction_text if custom_instruction_text else None,
-                        ),
+                    config = types.GenerateContentConfig(
+                        temperature=0.3,
+                        tools=[{"google_search": {}}],
+                        system_instruction=custom_instruction_text if custom_instruction_text else None,
                     )
-                    parsed_stocks = json.loads(response.text)
-                    st.session_state["stock_news_results"] = parsed_stocks
+                    
+                    response = None
+                    last_error = None
+                    for attempt in range(3):
+                        try:
+                            response = client.models.generate_content(
+                                model=MODEL_NAME,
+                                contents=prompt,
+                                config=config,
+                            )
+                            if response and response.text:
+                                break
+                        except Exception as e:
+                            last_error = e
+                            time.sleep(2)
+                    
+                    if not response or not response.text:
+                        raise last_error or Exception("ニュース情報の取得に失敗しました。")
+
+                    # 元記事リンクの抽出（グラウンディングメタデータからバックアップ取得）
+                    grounding_sources = []
+                    if response.candidates and response.candidates[0].grounding_metadata:
+                        gm = response.candidates[0].grounding_metadata
+                        if gm.grounding_chunks:
+                            for chunk in gm.grounding_chunks:
+                                if chunk.web and chunk.web.uri:
+                                    title = chunk.web.title or "参照元記事"
+                                    uri = chunk.web.uri
+                                    if not any(s["uri"] == uri for s in grounding_sources):
+                                        grounding_sources.append({"title": title, "uri": uri})
+
+                    st.session_state["stock_news_markdown"] = response.text
+                    st.session_state["stock_news_sources"] = grounding_sources
                     st.session_state["stock_news_last_updated"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    st.session_state["stock_news_last_targets"] = targets_to_analyze
+                    st.rerun()
                 except Exception as e:
                     st.error(f"銘柄ニュース取得中にエラーが発生しました: {str(e)}")
 
-    # 表示部（2〜3カラム並列カード形式）
-    s_data = st.session_state.get("stock_news_results")
-    if s_data and "stocks" in s_data and s_data["stocks"]:
-        stocks_list = s_data["stocks"]
+    # 自由検索で見つけた銘柄をウォッチリストに保存できる補助機能
+    if is_free_search and st.session_state.get("stock_news_last_targets"):
+        last_target = st.session_state["stock_news_last_targets"][0]
+        with st.expander(f"⭐ 調べた銘柄（{last_target}）を購入検討銘柄に保存する"):
+            parts = last_target.strip().split(maxsplit=1)
+            suggested_code = parts[0] if parts[0].isdigit() else ""
+            suggested_name = parts[1] if len(parts) > 1 else (parts[0] if not parts[0].isdigit() else "")
+            
+            s_col1, s_col2, s_col3 = st.columns([1.5, 2.5, 1.2])
+            with s_col1:
+                wl_code = st.text_input("コード", value=suggested_code, placeholder="例: 6526", key="in_wl_add_code")
+            with s_col2:
+                wl_name = st.text_input("銘柄名", value=suggested_name, placeholder="例: ソシオネクスト", key="in_wl_add_name")
+            with s_col3:
+                st.write("")
+                if st.button("ウォッチリストに追加", key="btn_add_free_to_wl", use_container_width=True):
+                    if wl_name.strip():
+                        existing_codes = [s["code"] for s in st.session_state["stock_watchlist"]]
+                        if wl_code.strip() and wl_code.strip() in existing_codes:
+                            st.warning("すでに登録されている銘柄コードです。")
+                        else:
+                            st.session_state["stock_watchlist"].append({
+                                "code": wl_code.strip() or "-",
+                                "name": wl_name.strip(),
+                                "memo": "自由検索より追加"
+                            })
+                            save_watchlist_config(st.session_state["stock_watchlist"])
+                            st.success(f"{wl_name.strip()} をウォッチリストに追加しました！")
+                            st.rerun()
+                    else:
+                        st.warning("銘柄名を入力してください。")
 
-        def get_stock_badge_html(badge: str) -> str:
-            if "好材料" in badge or "堅調" in badge:
-                return f'<span class="badge badge-positive">● {badge}</span>'
-            elif "警戒" in badge:
-                return f'<span class="badge badge-caution">▲ {badge}</span>'
-            elif "決算" in badge or "注目" in badge:
-                return f'<span class="badge" style="background-color: #4338CA; color: #C7D2FE; border: 1px solid #6366F1;">★ {badge}</span>'
-            else:
-                return f'<span class="badge badge-neutral">■ {badge}</span>'
+    # 表示部（最新Markdown出力＋元記事リンク）
+    md_content = st.session_state.get("stock_news_markdown")
+    if md_content:
+        blocks = [b.strip() for b in re.split(r'(?=^###\s+)', md_content, flags=re.MULTILINE) if b.strip()]
+        
+        if blocks:
+            cols_count = 2 if len(blocks) >= 2 else 1
+            for i in range(0, len(blocks), cols_count):
+                row_blocks = blocks[i : i + cols_count]
+                cols = st.columns(cols_count)
+                for idx, block in enumerate(row_blocks):
+                    with cols[idx]:
+                        with st.container(border=True):
+                            st.markdown(block)
+        else:
+            with st.container(border=True):
+                st.markdown(md_content)
 
-        cols_per_row = 3 if len(stocks_list) >= 3 else len(stocks_list)
-        if cols_per_row == 0:
-            cols_per_row = 1
-
-        for i in range(0, len(stocks_list), cols_per_row):
-            row_stocks = stocks_list[i : i + cols_per_row]
-            row_cols = st.columns(cols_per_row)
-            for c_idx, stock_item in enumerate(row_stocks):
-                code = stock_item.get("code", "")
-                name = stock_item.get("name", "")
-                badge = stock_item.get("badge", "中立")
-                summary = stock_item.get("summary", "")
-                pos_list = stock_item.get("positive_points", [])
-                risk_list = stock_item.get("risk_points", [])
-                insight = stock_item.get("insight", "")
-
-                pos_html = "".join([f"<li style='margin-bottom: 3px; color: #CBD5E1;'>{p}</li>" for p in pos_list])
-                risk_html = "".join([f"<li style='margin-bottom: 3px; color: #CBD5E1;'>{r}</li>" for r in risk_list])
-
-                with row_cols[c_idx]:
-                    card_html = f"""<div class="dashboard-card" style="border-top: 3px solid #6366F1;">
-<div class="dashboard-card-header">
-    <span class="dashboard-card-title">📈 {code} {name}</span>
-    {get_stock_badge_html(badge)}
-</div>
-<div style="font-size: 0.9rem; color: #F1F5F9; line-height: 1.45; margin-bottom: 10px;">
-    {summary}
-</div>
-<div style="font-size: 0.82rem; font-weight: 700; color: #34D399; margin-bottom: 4px;">👍 好材料・強み</div>
-<ul style="padding-left: 16px; font-size: 0.84rem; line-height: 1.4; margin-bottom: 8px;">
-    {pos_html}
-</ul>
-<div style="font-size: 0.82rem; font-weight: 700; color: #FBBF24; margin-bottom: 4px;">⚠️ リスク・注意点</div>
-<ul style="padding-left: 16px; font-size: 0.84rem; line-height: 1.4; margin-bottom: 10px;">
-    {risk_html}
-</ul>
-<div style="background-color: #0F172A; border-left: 3px solid #818CF8; padding: 8px 10px; border-radius: 6px;">
-    <div style="font-size: 0.78rem; font-weight: 700; color: #A5B4FC; margin-bottom: 2px;">💡 AIインサイト</div>
-    <div style="font-size: 0.84rem; color: #E2E8F0; line-height: 1.4;">{insight}</div>
-</div>
-</div>"""
-                    st.markdown(card_html, unsafe_allow_html=True)
+        # 全体参照元Web記事リスト（直接開けるリンク一覧）
+        sources = st.session_state.get("stock_news_sources", [])
+        if sources:
+            with st.expander("🌐 Google検索による参照元Web記事一覧（クリックで直接開く）", expanded=False):
+                s_cols = st.columns(min(len(sources), 3))
+                for s_idx, src in enumerate(sources):
+                    c_col = s_cols[s_idx % min(len(sources), 3)]
+                    with c_col:
+                        st.markdown(
+                            f"""
+                            <div style="background-color: #1E293B; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #334155;">
+                                <a href="{src['uri']}" target="_blank" style="color: #60A5FA; text-decoration: none; font-size: 0.84rem; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    🔗 {src['title']}
+                                </a>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
     else:
         st.markdown(
             """
             <div style="background-color: #1E293B; border: 2px dashed #334155; border-radius: 14px; padding: 40px; text-align: center; color: #94A3B8; margin-top: 10px;">
                 <div style="font-size: 2rem; margin-bottom: 10px;">📈</div>
                 <div style="font-size: 1.1rem; font-weight: 600; color: #F1F5F9;">銘柄ニュース・材料がまだ取得されていません</div>
-                <div style="font-size: 0.9rem; margin-top: 6px;">対象銘柄を選択して「銘柄ニュースをAI要約更新」ボタンを押すと、AIが最新の材料や決算動向を分析します。</div>
+                <div style="font-size: 0.9rem; margin-top: 6px;">対象銘柄を選択または入力して検索ボタンを押すと、Google Web検索から最新の材料や適時開示をAIが要約します。</div>
             </div>
             """,
             unsafe_allow_html=True,

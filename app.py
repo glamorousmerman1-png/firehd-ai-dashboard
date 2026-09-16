@@ -217,6 +217,17 @@ def get_genai_client(api_key: str):
         return None
     return genai.Client(api_key=api_key)
 
+def get_custom_instructions() -> str:
+    """custom_instructions.txt からユーザー定義の指示（回答トーン・スタイル）を読み込む"""
+    instruction_path = os.path.join(os.path.dirname(__file__), "custom_instructions.txt")
+    if os.path.exists(instruction_path):
+        try:
+            with open(instruction_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return ""
+
 # サイドバー（APIキー設定や補助メニュー）
 with st.sidebar:
     st.markdown("### ⚙️ 設定 & ステータス")
@@ -243,6 +254,17 @@ with st.sidebar:
         if st.button("🔒 ログアウト（再ロック）"):
             st.session_state["authenticated"] = False
             st.rerun()
+
+    st.markdown("---")
+    
+    # カスタム指示のステータス表示
+    custom_inst = get_custom_instructions()
+    if custom_inst:
+        st.markdown("**🎨 カスタム指示: 有効**")
+        with st.expander("指示内容を確認"):
+            st.text(custom_inst)
+    else:
+        st.caption("カスタム指示: 未設定（標準モード）")
 
     st.markdown("---")
     st.markdown(
@@ -382,12 +404,14 @@ with tab1:
                 }
                 """
                 try:
+                    custom_instruction_text = get_custom_instructions()
                     response = client.models.generate_content(
                         model=MODEL_NAME,
                         contents=prompt,
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json",
                             temperature=0.7,
+                            system_instruction=custom_instruction_text if custom_instruction_text else None,
                         ),
                     )
                     parsed_json = json.loads(response.text)
@@ -531,12 +555,14 @@ with tab2:
                 }}
                 """
                 try:
+                    custom_instruction_text = get_custom_instructions()
                     response = client.models.generate_content(
                         model=MODEL_NAME,
                         contents=prompt,
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json",
                             temperature=0.8,
+                            system_instruction=custom_instruction_text if custom_instruction_text else None,
                         ),
                     )
                     st.session_state["brainstorm_result"] = json.loads(response.text)
@@ -711,6 +737,7 @@ with tab3:
                         "motivation": "ユーザーが一日の活力を得られる、温かく前向きな一言エール（1〜2文）"
                     }}
                     """
+                    custom_instruction_text = get_custom_instructions()
                     try:
                         response = client.models.generate_content(
                             model=MODEL_NAME,
@@ -718,6 +745,7 @@ with tab3:
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json",
                                 temperature=0.7,
+                                system_instruction=custom_instruction_text if custom_instruction_text else None,
                             ),
                         )
                         st.session_state["task_advice"] = json.loads(response.text)

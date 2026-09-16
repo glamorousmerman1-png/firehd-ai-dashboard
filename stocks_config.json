@@ -1,0 +1,40 @@
+{
+  "holdings": [
+    {"code": "7011", "name": "三菱重工業", "category": "保有株 (主力)"},
+    {"code": "5803", "name": "フジクラ", "category": "保有株 (主力)"},
+    {"code": "9147", "name": "ＮＸＨＤ", "category": "保有株 (主力)"},
+    {"code": "6501", "name": "日立製作所", "category": "保有株 (特定/NISA)"},
+    {"code": "8316", "name": "三井住友フィナンシャルG", "category": "保有株 (NISA)"},
+    {"code": "2914", "name": "ＪＴ (日本たばこ産業)", "category": "保有株 (NISA)"},
+    {"code": "9432", "name": "ＮＴＴ", "category": "保有株 (NISA)"},
+    {"code": "8058", "name": "三菱商事", "category": "保有株 (特定)"},
+    {"code": "4063", "name": "信越化学工業", "category": "保有株 (特定)"},
+    {"code": "2702", "name": "日本マクドナルドHD", "category": "保有株 (特定)"},
+    {"code": "7581", "name": "サイゼリヤ", "category": "保有株 (特定)"},
+    {"code": "9984", "name": "ソフトバンクグループ", "category": "保有株 (特定)"},
+    {"code": "5401", "name": "日本製鉄", "category": "保有株 (NISA)"},
+    {"code": "4503", "name": "アステラス製薬", "category": "保有株 (NISA)"},
+    {"code": "1605", "name": "ＩＮＰＥＸ", "category": "保有株 (特定)"},
+    {"code": "8593", "name": "三菱ＨＣキャピタル", "category": "保有株 (特定)"},
+    {"code": "7867", "name": "タカラトミー", "category": "保有株 (特定)"},
+    {"code": "3543", "name": "コメダHD", "category": "保有株 (特定)"},
+    {"code": "9936", "name": "王将フードサービス", "category": "保有株 (特定)"},
+    {"code": "7164", "name": "全国保証", "category": "保有株 (特定)"},
+    {"code": "7239", "name": "タチエス", "category": "保有株 (特定)"},
+    {"code": "5110", "name": "住友ゴム工業", "category": "保有株 (NISA)"},
+    {"code": "6045", "name": "レントラックス", "category": "保有株 (特定)"},
+    {"code": "6140", "name": "旭ダイヤモンド工業", "category": "保有株 (NISA)"},
+    {"code": "7769", "name": "リズム", "category": "保有株 (特定)"},
+    {"code": "2108", "name": "日本甜菜製糖", "category": "保有株 (特定)"},
+    {"code": "4994", "name": "大成ラミック", "category": "保有株 (特定)"},
+    {"code": "1383", "name": "ベルグアース", "category": "保有株 (特定)"},
+    {"code": "QQQ", "name": "インベスコ QQQ (米国株ETF)", "category": "保有株 (米国ETF)"},
+    {"code": "VT", "name": "バンガード 全世界株式 (VT)", "category": "保有株 (米国ETF)"}
+  ],
+  "watchlist": [
+    {"code": "7203", "name": "トヨタ自動車", "memo": "世界トップの自動車大手・EV/HV戦略"},
+    {"code": "6758", "name": "ソニーグループ", "memo": "ゲーム・半導体・エンタメ複合成長"},
+    {"code": "6857", "name": "アドバンテスト", "memo": "半導体検査装置の世界大手・生成AI需要"},
+    {"code": "8035", "name": "東京エレクトロン", "memo": "半導体製造装置の国内首位"}
+  ]
+}

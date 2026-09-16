@@ -298,6 +298,29 @@ if "tasks" not in st.session_state:
 if "task_advice" not in st.session_state:
     st.session_state["task_advice"] = None
 
+def load_stocks_config():
+    """stocks_config.json から銘柄リストを読み込む"""
+    config_path = os.path.join(os.path.dirname(__file__), "stocks_config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"holdings": [], "watchlist": []}
+
+default_stocks = load_stocks_config()
+if "stock_holdings" not in st.session_state:
+    st.session_state["stock_holdings"] = default_stocks.get("holdings", [])
+if "stock_watchlist" not in st.session_state:
+    st.session_state["stock_watchlist"] = default_stocks.get("watchlist", [])
+if "stock_news_results" not in st.session_state:
+    st.session_state["stock_news_results"] = None
+if "stock_news_last_updated" not in st.session_state:
+    st.session_state["stock_news_last_updated"] = None
+if "stock_selected_tab_mode" not in st.session_state:
+    st.session_state["stock_selected_tab_mode"] = "保有銘柄"
+
 # -----------------------------------------------------------------------------
 # トップステータスバー（現在日時・常駐感の演出）
 # -----------------------------------------------------------------------------
@@ -340,8 +363,9 @@ if not api_key:
 # -----------------------------------------------------------------------------
 # メインタブ構成
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "📊 情報ブリーフィング",
+    "📈 銘柄ニュース・材料",
     "💡 思考整理・ブレスト",
     "📝 タスク・アドバイザー",
 ])
@@ -476,9 +500,212 @@ with tab1:
         )
 
 # =============================================================================
-# タブ2：思考整理・ブレスト（Brainstorm & Wall-hit）
+# タブ2：銘柄ニュース・材料（Stock Intelligence）
 # =============================================================================
 with tab2:
+    col_s_mode, col_s_mgmt = st.columns([2.2, 1.8])
+    with col_s_mode:
+        stock_mode = st.radio(
+            "対象カテゴリ",
+            ["💼 保有銘柄 (ポートフォリオ)", "⭐ 購入検討銘柄 (ウォッチリスト)"],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="rad_stock_mode",
+        )
+    is_watchlist = "購入検討銘柄" in stock_mode
+
+    # 購入検討銘柄の追加・管理（ウォッチリスト時のみ表示）
+    if is_watchlist:
+        with st.expander("➕ 新しい購入検討銘柄の追加・削除管理"):
+            f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 2.0, 2.5, 1.0])
+            with f_col1:
+                new_code = st.text_input("コード", placeholder="例: 7203", key="in_new_stock_code")
+            with f_col2:
+                new_name = st.text_input("銘柄名", placeholder="例: トヨタ自動車", key="in_new_stock_name")
+            with f_col3:
+                new_memo = st.text_input("メモ・注目点", placeholder="例: EV/HV世界首位、好業績", key="in_new_stock_memo")
+            with f_col4:
+                st.write("")
+                add_stock_btn = st.button("追加", key="btn_add_watchlist_stock", use_container_width=True)
+
+            if add_stock_btn and new_code.strip() and new_name.strip():
+                existing_codes = [s["code"] for s in st.session_state["stock_watchlist"]]
+                if new_code.strip() not in existing_codes:
+                    st.session_state["stock_watchlist"].append({
+                        "code": new_code.strip(),
+                        "name": new_name.strip(),
+                        "memo": new_memo.strip() or "購入検討"
+                    })
+                    st.success(f"{new_name.strip()} ({new_code.strip()}) をウォッチリストに追加しました！")
+                    st.rerun()
+                else:
+                    st.warning("すでに登録されている銘柄コードです。")
+
+            if st.session_state["stock_watchlist"]:
+                st.caption("【登録済みの購入検討銘柄（クリックで削除可能）】")
+                del_cols = st.columns(min(len(st.session_state["stock_watchlist"]), 4))
+                for idx, s in enumerate(st.session_state["stock_watchlist"]):
+                    col_idx = idx % min(len(st.session_state["stock_watchlist"]), 4)
+                    with del_cols[col_idx]:
+                        if st.button(f"🗑️ {s['code']} {s['name']}", key=f"del_wl_{s['code']}", help="クリックで削除"):
+                            st.session_state["stock_watchlist"] = [item for item in st.session_state["stock_watchlist"] if item["code"] != s["code"]]
+                            st.rerun()
+
+    # 銘柄選択セレクター
+    current_list = st.session_state["stock_watchlist"] if is_watchlist else st.session_state["stock_holdings"]
+    stock_options = [f"{s['code']} {s['name']}" for s in current_list]
+
+    if not is_watchlist:
+        default_selected = [opt for opt in stock_options if any(c in opt for c in ["7011", "5803", "9147", "6501", "8316", "2914"])]
+    else:
+        default_selected = stock_options[:4]
+
+    sel_col1, sel_col2 = st.columns([3.5, 1.5])
+    with sel_col1:
+        selected_stocks = st.multiselect(
+            "分析対象銘柄（最大6銘柄推奨）",
+            options=stock_options,
+            default=default_selected,
+            key=f"mselect_stocks_{'wl' if is_watchlist else 'hold'}",
+            help="最新ニュース・適時開示・材料を分析したい銘柄を選んでください"
+        )
+    with sel_col2:
+        st.write("")
+        btn_update_stock_news = st.button("🔍 銘柄ニュースをAI要約更新", key="btn_update_stock_news", use_container_width=True)
+
+    if st.session_state["stock_news_last_updated"]:
+        st.caption(f"最終更新: {st.session_state['stock_news_last_updated']}")
+    else:
+        st.caption("ボタンを押すと、選択した銘柄の最新ニュース、決算・適時開示、材料をAIが要約します。")
+
+    # AI分析実行
+    if btn_update_stock_news:
+        if not selected_stocks:
+            st.warning("分析する銘柄を少なくとも1つ選択してください。")
+        elif not client:
+            st.error("APIキーが設定されていません。サイドバーから設定してください。")
+        else:
+            with st.spinner("各銘柄の最新ニュース、決算・適時開示、市況材料を調査・分析中..."):
+                target_str = "\n".join([f"- {s}" for s in selected_stocks])
+                prompt = f"""
+                あなたは一流の株式・証券アナリストです。
+                以下の対象銘柄について、直近の重要ニュース、決算発表・業績動向、適時開示、株価材料（ポジティブ要因 / リスク要因）、および今後の投資判断に向けたインサイトを分析・要約してください。
+
+                【対象銘柄】
+                {target_str}
+
+                【出力形式】
+                以下のキーを持つJSONオブジェクトのみを出力してください（Markdownコードブロック不要、純粋なJSONテキスト）。
+                {{
+                    "stocks": [
+                        {{
+                            "code": "銘柄コード（例: 7011）",
+                            "name": "銘柄名（例: 三菱重工業）",
+                            "badge": "好材料" または "堅調" または "中立" または "警戒" または "決算注目",
+                            "summary": "直近の重要ニュース・適時開示・材料の要約（2〜3行で簡潔に）",
+                            "positive_points": [
+                                "好材料・強み1",
+                                "好材料・強み2"
+                            ],
+                            "risk_points": [
+                                "懸念点・リスク1",
+                                "懸念点・リスク2"
+                            ],
+                            "insight": "保有継続や新規購入検討に向けたAIインサイト（2〜3文）"
+                        }}
+                    ]
+                }}
+                """
+                try:
+                    custom_instruction_text = get_custom_instructions()
+                    response = client.models.generate_content(
+                        model=MODEL_NAME,
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json",
+                            temperature=0.7,
+                            system_instruction=custom_instruction_text if custom_instruction_text else None,
+                        ),
+                    )
+                    parsed_stocks = json.loads(response.text)
+                    st.session_state["stock_news_results"] = parsed_stocks
+                    st.session_state["stock_news_last_updated"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                except Exception as e:
+                    st.error(f"銘柄ニュース取得中にエラーが発生しました: {str(e)}")
+
+    # 表示部（2〜3カラム並列カード形式）
+    s_data = st.session_state.get("stock_news_results")
+    if s_data and "stocks" in s_data and s_data["stocks"]:
+        stocks_list = s_data["stocks"]
+
+        def get_stock_badge_html(badge: str) -> str:
+            if "好材料" in badge or "堅調" in badge:
+                return f'<span class="badge badge-positive">● {badge}</span>'
+            elif "警戒" in badge:
+                return f'<span class="badge badge-caution">▲ {badge}</span>'
+            elif "決算" in badge or "注目" in badge:
+                return f'<span class="badge" style="background-color: #4338CA; color: #C7D2FE; border: 1px solid #6366F1;">★ {badge}</span>'
+            else:
+                return f'<span class="badge badge-neutral">■ {badge}</span>'
+
+        cols_per_row = 3 if len(stocks_list) >= 3 else len(stocks_list)
+        if cols_per_row == 0:
+            cols_per_row = 1
+
+        for i in range(0, len(stocks_list), cols_per_row):
+            row_stocks = stocks_list[i : i + cols_per_row]
+            row_cols = st.columns(cols_per_row)
+            for c_idx, stock_item in enumerate(row_stocks):
+                code = stock_item.get("code", "")
+                name = stock_item.get("name", "")
+                badge = stock_item.get("badge", "中立")
+                summary = stock_item.get("summary", "")
+                pos_list = stock_item.get("positive_points", [])
+                risk_list = stock_item.get("risk_points", [])
+                insight = stock_item.get("insight", "")
+
+                pos_html = "".join([f"<li style='margin-bottom: 3px; color: #CBD5E1;'>{p}</li>" for p in pos_list])
+                risk_html = "".join([f"<li style='margin-bottom: 3px; color: #CBD5E1;'>{r}</li>" for r in risk_list])
+
+                with row_cols[c_idx]:
+                    card_html = f"""<div class="dashboard-card" style="border-top: 3px solid #6366F1;">
+<div class="dashboard-card-header">
+    <span class="dashboard-card-title">📈 {code} {name}</span>
+    {get_stock_badge_html(badge)}
+</div>
+<div style="font-size: 0.9rem; color: #F1F5F9; line-height: 1.45; margin-bottom: 10px;">
+    {summary}
+</div>
+<div style="font-size: 0.82rem; font-weight: 700; color: #34D399; margin-bottom: 4px;">👍 好材料・強み</div>
+<ul style="padding-left: 16px; font-size: 0.84rem; line-height: 1.4; margin-bottom: 8px;">
+    {pos_html}
+</ul>
+<div style="font-size: 0.82rem; font-weight: 700; color: #FBBF24; margin-bottom: 4px;">⚠️ リスク・注意点</div>
+<ul style="padding-left: 16px; font-size: 0.84rem; line-height: 1.4; margin-bottom: 10px;">
+    {risk_html}
+</ul>
+<div style="background-color: #0F172A; border-left: 3px solid #818CF8; padding: 8px 10px; border-radius: 6px;">
+    <div style="font-size: 0.78rem; font-weight: 700; color: #A5B4FC; margin-bottom: 2px;">💡 AIインサイト</div>
+    <div style="font-size: 0.84rem; color: #E2E8F0; line-height: 1.4;">{insight}</div>
+</div>
+</div>"""
+                    st.markdown(card_html, unsafe_allow_html=True)
+    else:
+        st.markdown(
+            """
+            <div style="background-color: #1E293B; border: 2px dashed #334155; border-radius: 14px; padding: 40px; text-align: center; color: #94A3B8; margin-top: 10px;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">📈</div>
+                <div style="font-size: 1.1rem; font-weight: 600; color: #F1F5F9;">銘柄ニュース・材料がまだ取得されていません</div>
+                <div style="font-size: 0.9rem; margin-top: 6px;">対象銘柄を選択して「銘柄ニュースをAI要約更新」ボタンを押すと、AIが最新の材料や決算動向を分析します。</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# =============================================================================
+# タブ3：思考整理・ブレスト（Brainstorm & Wall-hit）
+# =============================================================================
+with tab3:
     st.markdown(
         """
         <div style="font-size: 0.95rem; color: #94A3B8; margin-bottom: 10px;">
@@ -641,9 +868,9 @@ with tab2:
             )
 
 # =============================================================================
-# タブ3：タスク・アドバイザー（Daily Task Advisor）
+# タブ4：タスク・アドバイザー（Daily Task Advisor）
 # =============================================================================
-with tab3:
+with tab4:
     task_col_left, task_col_right = st.columns([1.1, 1.1], gap="large")
 
     # 左側：ToDoリスト管理

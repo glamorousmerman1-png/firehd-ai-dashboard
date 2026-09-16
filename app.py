@@ -389,6 +389,14 @@ if "stock_news_last_updated" not in st.session_state:
     st.session_state["stock_news_last_updated"] = None
 if "stock_selected_tab_mode" not in st.session_state:
     st.session_state["stock_selected_tab_mode"] = "保有銘柄"
+if "stock_discovery_results" not in st.session_state:
+    st.session_state["stock_discovery_results"] = None
+if "stock_discovery_sources" not in st.session_state:
+    st.session_state["stock_discovery_sources"] = []
+if "stock_discovery_last_updated" not in st.session_state:
+    st.session_state["stock_discovery_last_updated"] = None
+if "stock_discovery_title" not in st.session_state:
+    st.session_state["stock_discovery_title"] = ""
 
 # -----------------------------------------------------------------------------
 # トップステータスバー（現在日時・常駐感の演出）
@@ -432,9 +440,10 @@ if not api_key:
 # -----------------------------------------------------------------------------
 # メインタブ構成
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📊 情報ブリーフィング",
-    "📈 銘柄ニュース・材料",
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📊 市況ブリーフィング",
+    "📈 銘柄ニュース",
+    "🎯 銘柄発掘・スクリーニング",
     "💡 思考整理・ブレスト",
     "📝 タスク・アドバイザー",
 ])
@@ -799,8 +808,18 @@ Google検索ツールを活用し、以下の対象銘柄に関する【直近�
     # 表示部（最新Markdown出力＋元記事リンク）
     md_content = st.session_state.get("stock_news_markdown")
     if md_content:
-        blocks = [b.strip() for b in re.split(r'(?=^###\s+)', md_content, flags=re.MULTILINE) if b.strip()]
-        
+        raw_blocks = [b.strip() for b in re.split(r'(?=^###\s+)', md_content, flags=re.MULTILINE) if b.strip()]
+        intro_text = ""
+        blocks = []
+        for b in raw_blocks:
+            if b.startswith("###"):
+                blocks.append(b)
+            else:
+                intro_text = b
+
+        if intro_text:
+            st.info(intro_text)
+
         if blocks:
             cols_count = 2 if len(blocks) >= 2 else 1
             for i in range(0, len(blocks), cols_count):
@@ -845,9 +864,357 @@ Google検索ツールを活用し、以下の対象銘柄に関する【直近�
         )
 
 # =============================================================================
-# タブ3：思考整理・ブレスト（Brainstorm & Wall-hit）
+# タブ3：銘柄発掘・スクリーニング（Stock Discovery & Screening）
 # =============================================================================
 with tab3:
+    col_d_mode, col_d_info = st.columns([2.8, 1.2])
+    with col_d_mode:
+        discovery_mode = st.radio(
+            "発掘モード",
+            [
+                "🚀 最近好調・テーマ別発掘",
+                "🎁 株主優待おすすめ検索",
+                "📅 今月決算・発表予定銘柄",
+            ],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="rad_discovery_mode",
+        )
+    with col_d_info:
+        st.caption("Google Web検索連携 🌐")
+
+    is_trending_mode = "好調" in discovery_mode
+    is_yutai_mode = "株主優待" in discovery_mode
+    is_earnings_mode = "決算" in discovery_mode
+
+    target_query_title = ""
+    prompt_query_detail = ""
+    run_discovery = False
+
+    # 1. 🚀 最近好調・テーマ別発掘
+    if is_trending_mode:
+        st.markdown(
+            """
+            <div style="font-size: 0.88rem; color: #94A3B8; margin-bottom: 8px;">
+                関心のあるセクターや投資テーマを選ぶと、直近で好調な理由や業績の裏付け、おすすめ度（★）付きの注目銘柄をAIが発掘・提案します。
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        t_col1, t_col2 = st.columns([3.2, 1.3])
+        with t_col1:
+            theme_category = st.selectbox(
+                "投資テーマ・カテゴリを選択",
+                [
+                    "🔥 半導体・AIインフラ・先端技術（世界的な設備投資活況）",
+                    "💰 高配当・バリュー・割安優良株（株主還元・低PBR是正）",
+                    "🛡️ 防衛・航空宇宙・重工（地政学リスク・国策予算拡大）",
+                    "🌐 総合商社・資源・エネルギー（強固な収益基盤と高還元）",
+                    "🚗 自動車・EV・次世代モビリティ（円安恩恵・次世代技術）",
+                    "🏦 メガバンク・大手金融（利上げ・金利上昇メリット）",
+                    "💻 クラウド・DX・AIソリューション（高成長SaaS・企業変革）",
+                    "🛍️ 内需拡大・インバウンド・小売消費（訪日客需要・賃上げ）",
+                    "💊 医薬品・バイオ・ヘルスケア（ディフェンシブ・新薬開発）",
+                    "✏️ 自由入力（任意のテーマ・業種キーワード）",
+                ],
+                key="sb_trending_category",
+                label_visibility="collapsed"
+            )
+            custom_theme = ""
+            if "自由入力" in theme_category:
+                custom_theme = st.text_input("調べたいテーマや業種を入力してください", placeholder="例: データセンター電力、量子コンピュータ、ロボティクス など", key="in_custom_theme")
+        with t_col2:
+            run_discovery = st.button("🔍 好調銘柄を発掘・提案", key="btn_run_trending_discovery", use_container_width=True)
+
+        clean_cat = theme_category.split("（")[0].replace("🔥 ", "").replace("💰 ", "").replace("🛡️ ", "").replace("🌐 ", "").replace("🚗 ", "").replace("🏦 ", "").replace("💻 ", "").replace("🛍️ ", "").replace("💊 ", "").replace("✏️ ", "")
+        selected_theme = custom_theme.strip() if ("自由入力" in theme_category and custom_theme.strip()) else clean_cat
+        target_query_title = f"テーマ：{selected_theme}"
+        prompt_query_detail = f"""
+【調査テーマ】
+「{selected_theme}」分野において、直近（2026年最新動向）で業績が好調、株価が堅調、または強い買い材料・カタリストが存在するおすすめの日本株・上場企業を3〜4銘柄厳選してください。
+
+【出力要件】
+各銘柄について、必ず以下のMarkdownフォーマットに厳格に従って出力してください。
+各銘柄の先頭は「### [証券コード] [銘柄名]」で始めてください。
+参照した元記事や開示情報のURLを「🔗 参照元ニュース・情報源」にMarkdownリンク `[記事見出しや媒体名](URL)` で記載してください。
+
+### [銘柄コード] [銘柄名]
+- **おすすめ度**: ★★★★★（または ★★★★☆、★★★☆☆）
+- **おすすめ理由・好調の背景**:
+  （なぜ今好調なのか、業績の伸びや業界トレンド、受注動向などを2〜3文で具体的に解説）
+- **直近の株価材料・ポジティブ要因**:
+  - （直近の決算発表、適時開示、目標株価引き上げなどの具体的事実）
+  - （競合に対する優位性や強み）
+- **留意点・投資リスク**:
+  - （株価過熱感や為替・地政学などのリスク要因）
+- **プロの投資視点・着眼点**:
+  （中長期または短期での投資アプローチ）
+- **🔗 参照元ニュース・情報源**:
+  - [記事タイトルや媒体名](URL)
+"""
+
+    # 2. 🎁 株主優待おすすめ検索
+    elif is_yutai_mode:
+        st.markdown(
+            """
+            <div style="font-size: 0.88rem; color: #94A3B8; margin-bottom: 8px;">
+                権利確定月や優待ジャンル（食事券、買い物券、QUOカード等）から、利回りが高く生活に役立つおすすめ優待銘柄をリサーチします。
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        y_col1, y_col2, y_col3 = st.columns([2.2, 2.2, 1.3])
+        with y_col1:
+            yutai_month = st.selectbox(
+                "権利確定月",
+                [
+                    "📅 今月（9月）権利確定の注目優待銘柄",
+                    "📅 来月（10月）権利確定の優待銘柄",
+                    "🌸 3月決算・超人気優待銘柄",
+                    "⭐ 通年・利回り重視でいつでも持っておきたい定番優待",
+                ],
+                key="sb_yutai_month",
+                label_visibility="collapsed"
+            )
+        with y_col2:
+            yutai_genre = st.selectbox(
+                "優待ジャンル",
+                [
+                    "🍽️ 人気飲食・外食チェーン食事券",
+                    "🛒 買い物優待券・割引・ECクーポン",
+                    "💳 QUOカード・ギフトカード等の金券",
+                    "🎁 カタログギフト・各地名産品・食品",
+                    "📦 自社製品詰め合わせ・日用品",
+                    "🌟 全ジャンルから総合的におすすめ",
+                ],
+                key="sb_yutai_genre",
+                label_visibility="collapsed"
+            )
+        with y_col3:
+            run_discovery = st.button("🎁 優待銘柄をリサーチ", key="btn_run_yutai_discovery", use_container_width=True)
+
+        target_query_title = f"株主優待：{yutai_month.split('（')[0].replace('📅 ', '').replace('🌸 ', '').replace('⭐ ', '')} × {yutai_genre.split('・')[0].replace('🍽️ ', '').replace('🛒 ', '').replace('💳 ', '').replace('🎁 ', '').replace('📦 ', '').replace('🌟 ', '')}"
+        prompt_query_detail = f"""
+【調査テーマ】
+「{yutai_month}」かつ「ジャンル: {yutai_genre}」に該当する、個人投資家に極めて人気が高く、おすすめできる優待実施企業を3〜4銘柄厳選してください。
+
+【出力要件】
+各銘柄について、必ず以下のMarkdownフォーマットに厳格に従って出力してください。
+各銘柄の先頭は「### [証券コード] [銘柄名]」で始めてください。
+参照した元記事やIR情報のURLを「🔗 参照元ニュース・情報源」にMarkdownリンク `[記事見出しや媒体名](URL)` で記載してください。
+
+### [銘柄コード] [銘柄名]
+- **おすすめ度**: ★★★★★（実用性や総合利回り）
+- **優待内容・権利月**:
+  （優待品の内容、必要株数、権利確定月、長期保有特典の有無）
+- **おすすめ理由・企業の安定性**:
+  （優待の魅力に加え、業績や財務健全性、優待廃止リスクの低さを解説）
+- **利回りと投資額の目安**:
+  - 配当利回り＋優待利回りの総合利回り目安
+  - 最低投資金額の目安
+- **注意点・留意事項**:
+  - （権利落ち日の株価下落リスクや優待改悪リスクなど）
+- **🔗 参照元ニュース・情報源**:
+  - [記事タイトルや媒体名](URL)
+"""
+
+    # 3. 📅 今月決算・発表予定銘柄
+    elif is_earnings_mode:
+        now_month_str = f"{now.year}年{now.month}月"
+        st.markdown(
+            f"""
+            <div style="font-size: 0.88rem; color: #94A3B8; margin-bottom: 8px;">
+                当月（{now_month_str}）および直近に決算発表を控える注目企業をリサーチし、発表予定日や事前期待値、注目着眼点を整理します。
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        e_col1, e_col2 = st.columns([3.2, 1.3])
+        with e_col1:
+            earnings_target = st.selectbox(
+                "決算調査対象",
+                [
+                    f"📅 当月（{now_month_str}）に決算発表を予定している主要・注目銘柄",
+                    "⚡ 直近1〜2週間以内に発表予定の重要決算銘柄",
+                    "🚀 上方修正や増配発表が期待されている注目決算銘柄",
+                ],
+                key="sb_earnings_target",
+                label_visibility="collapsed"
+            )
+        with e_col2:
+            run_discovery = st.button("📅 注目決算銘柄をリサーチ", key="btn_run_earnings_discovery", use_container_width=True)
+
+        target_query_title = f"決算発表：{earnings_target.split('（')[0].replace('📅 ', '').replace('⚡ ', '').replace('🚀 ', '')}"
+        prompt_query_detail = f"""
+【調査テーマ】
+「{earnings_target}」に関して、日本株市場で機関投資家や個人投資家からの注目度が特に高い主要企業を3〜4銘柄ピックアップしてください。
+
+【出力要件】
+各銘柄について、必ず以下のMarkdownフォーマットに厳格に従って出力してください。
+各銘柄の先頭は「### [証券コード] [銘柄名]」で始めてください。
+参照した元記事や適時開示情報のURLを「🔗 参照元ニュース・情報源」にMarkdownリンク `[記事見出しや媒体名](URL)` で記載してください。
+
+### [銘柄コード] [銘柄名]
+- **注目度**: ★★★★★
+- **決算発表予定日・決算期**:
+  （予定日、2026年度第何四半期決算か）
+- **今回の決算の最重要着眼点**:
+  （業績進捗率、売上・利益の伸び、通期上方修正や自社株買い・増配の期待値）
+- **事前コンセンサス・市場の期待動向**:
+  （アナリスト予想や直近の業績トレンド、事前観測）
+- **決算を控えた投資スタンス・リスク**:
+  （好決算出尽くしリスクや為替影響など、発表前後の値動きに対する注意点）
+- **🔗 参照元ニュース・情報源**:
+  - [記事タイトルや媒体名](URL)
+"""
+
+    if st.session_state["stock_discovery_last_updated"]:
+        st.caption(f"発掘結果（{st.session_state['stock_discovery_title']}）- 最終更新: {st.session_state['stock_discovery_last_updated']}")
+
+    # AIスクリーニング実行
+    if run_discovery:
+        if not client:
+            st.error("APIキーが設定されていません。サイドバーから設定してくださいね。")
+        else:
+            with st.spinner("Google検索と連携して、条件に合致する最新の銘柄・開示情報・ニュースを調査中..."):
+                prompt = f"""
+あなたは一流のプロ株式アナリスト・スクリーニング専門家です。
+Google検索ツールを活用し、2026年直近の最新市場データ、適時開示、アナリストレポートを徹底調査した上で、以下の依頼に回答してください。
+
+{prompt_query_detail}
+"""
+                try:
+                    custom_instruction_text = get_custom_instructions()
+                    config = types.GenerateContentConfig(
+                        temperature=0.3,
+                        tools=[{"google_search": {}}],
+                        system_instruction=custom_instruction_text if custom_instruction_text else None,
+                    )
+                    
+                    response = None
+                    last_error = None
+                    for attempt in range(3):
+                        try:
+                            response = client.models.generate_content(
+                                model=MODEL_NAME,
+                                contents=prompt,
+                                config=config,
+                            )
+                            if response and response.text:
+                                break
+                        except Exception as e:
+                            last_error = e
+                            time.sleep(2)
+
+                    if not response or not response.text:
+                        raise last_error or Exception("銘柄情報のスクリーニングに失敗しました。")
+
+                    # 元記事リンクの抽出
+                    grounding_sources = []
+                    if response.candidates and response.candidates[0].grounding_metadata:
+                        gm = response.candidates[0].grounding_metadata
+                        if gm.grounding_chunks:
+                            for chunk in gm.grounding_chunks:
+                                if chunk.web and chunk.web.uri:
+                                    title = chunk.web.title or "参照元記事"
+                                    uri = chunk.web.uri
+                                    if not any(s["uri"] == uri for s in grounding_sources):
+                                        grounding_sources.append({"title": title, "uri": uri})
+
+                    st.session_state["stock_discovery_results"] = response.text
+                    st.session_state["stock_discovery_sources"] = grounding_sources
+                    st.session_state["stock_discovery_last_updated"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    st.session_state["stock_discovery_title"] = target_query_title
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"銘柄スクリーニング中にエラーが発生しました: {str(e)}")
+
+    # 表示部（2カラムカード形式 ＋ ウォッチリスト追加連携）
+    disc_content = st.session_state.get("stock_discovery_results")
+    if disc_content:
+        raw_blocks = [b.strip() for b in re.split(r'(?=^###\s+)', disc_content, flags=re.MULTILINE) if b.strip()]
+        intro_text = ""
+        blocks = []
+        for b in raw_blocks:
+            if b.startswith("###"):
+                blocks.append(b)
+            else:
+                intro_text = b
+
+        if intro_text:
+            st.info(intro_text)
+
+        if blocks:
+            cols_count = 2 if len(blocks) >= 2 else 1
+            for i in range(0, len(blocks), cols_count):
+                row_blocks = blocks[i : i + cols_count]
+                cols = st.columns(cols_count)
+                for idx, block in enumerate(row_blocks):
+                    with cols[idx]:
+                        with st.container(border=True):
+                            st.markdown(block)
+                            
+                            # カードから銘柄コード・銘柄名を自動抽出してウォッチリスト追加ボタンを配置
+                            first_line = block.split("\n")[0]
+                            header_clean = first_line.replace("###", "").replace("[", "").replace("]", "").strip()
+                            parts = header_clean.split(maxsplit=1)
+                            p_code = parts[0] if (parts and parts[0].isdigit()) else ""
+                            p_name = parts[1] if len(parts) > 1 else header_clean
+                            
+                            btn_label = f"⭐ {p_name} ({p_code}) をウォッチリストに追加" if p_code else f"⭐ {p_name} をウォッチリストに追加"
+                            btn_key = f"btn_add_disc_wl_{i}_{idx}"
+                            
+                            if st.button(btn_label, key=btn_key, use_container_width=True):
+                                existing_codes = [s["code"] for s in st.session_state["stock_watchlist"]]
+                                if p_code and p_code in existing_codes:
+                                    st.warning("すでにウォッチリストに登録されています。")
+                                else:
+                                    st.session_state["stock_watchlist"].append({
+                                        "code": p_code or "-",
+                                        "name": p_name,
+                                        "memo": f"銘柄発掘（{st.session_state.get('stock_discovery_title', '')}）より追加"
+                                    })
+                                    save_watchlist_config(st.session_state["stock_watchlist"])
+                                    st.success(f"{p_name} をウォッチリストに追加しました！「銘柄ニュース」タブでいつでも最新ニュースを確認できます。")
+                                    st.rerun()
+        else:
+            with st.container(border=True):
+                st.markdown(disc_content)
+
+        # 参照元Web記事リスト（直接開けるリンク一覧）
+        d_sources = st.session_state.get("stock_discovery_sources", [])
+        if d_sources:
+            with st.expander("🌐 Google検索による参照元Web記事一覧（クリックで直接開く）", expanded=False):
+                s_cols = st.columns(min(len(d_sources), 3))
+                for s_idx, src in enumerate(d_sources):
+                    c_col = s_cols[s_idx % min(len(d_sources), 3)]
+                    with c_col:
+                        st.markdown(
+                            f"""
+                            <div style="background-color: #1E293B; padding: 8px 12px; border-radius: 8px; margin-bottom: 8px; border: 1px solid #334155;">
+                                <a href="{src['uri']}" target="_blank" style="color: #60A5FA; text-decoration: none; font-size: 0.84rem; font-weight: 500; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    🔗 {src['title']}
+                                </a>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+    else:
+        st.markdown(
+            """
+            <div style="background-color: #1E293B; border: 2px dashed #334155; border-radius: 14px; padding: 40px; text-align: center; color: #94A3B8; margin-top: 10px;">
+                <div style="font-size: 2rem; margin-bottom: 10px;">🎯</div>
+                <div style="font-size: 1.1rem; font-weight: 600; color: #F1F5F9;">条件を選択して銘柄をリサーチしてみましょう</div>
+                <div style="font-size: 0.9rem; margin-top: 6px;">「最近好調なテーマ銘柄」「おすすめ株主優待」「今月の注目決算」から選んでボタンを押すと、AIがGoogle Web検索から銘柄を発掘・提案します。</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+# =============================================================================
+# タブ4：思考整理・ブレスト（Brainstorm & Wall-hit）
+# =============================================================================
+with tab4:
     st.markdown(
         """
         <div style="font-size: 0.95rem; color: #94A3B8; margin-bottom: 10px;">
@@ -1010,9 +1377,9 @@ with tab3:
             )
 
 # =============================================================================
-# タブ4：タスク・アドバイザー（Daily Task Advisor）
+# タブ5：タスク・アドバイザー（Daily Task Advisor）
 # =============================================================================
-with tab4:
+with tab5:
     task_col_left, task_col_right = st.columns([1.1, 1.1], gap="large")
 
     # 左側：ToDoリスト管理

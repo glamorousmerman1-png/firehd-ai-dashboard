@@ -299,15 +299,64 @@ if "task_advice" not in st.session_state:
     st.session_state["task_advice"] = None
 
 def load_stocks_config():
-    """stocks_config.json から銘柄リストを読み込む"""
-    config_path = os.path.join(os.path.dirname(__file__), "stocks_config.json")
-    if os.path.exists(config_path):
+    """stock-monitorのCSVが存在すればそこから最新読み込み、無ければstocks_config.jsonから読み込む"""
+    portfolio_csv = "G:/マイドライブ/Antiglavity/.agent/stock-monitor/portfolio.csv"
+    watchlist_csv = "G:/マイドライブ/Antiglavity/.agent/stock-monitor/watchlist.csv"
+    
+    holdings = []
+    watchlist = []
+    
+    # 1. ローカルPC上でstock-monitorのCSVが存在する場合（優先）
+    if os.path.exists(portfolio_csv):
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            import csv
+            with open(portfolio_csv, "r", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    c = row.get("銘柄コード", "").strip()
+                    n = row.get("銘柄名", "").strip()
+                    cat = row.get("カテゴリ", "").strip()
+                    if c and n:
+                        holdings.append({"code": c, "name": n, "category": cat})
         except Exception:
             pass
-    return {"holdings": [], "watchlist": []}
+            
+    if os.path.exists(watchlist_csv):
+        try:
+            import csv
+            with open(watchlist_csv, "r", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    c = row.get("銘柄コード", "").strip()
+                    n = row.get("銘柄名", "").strip()
+                    cat = row.get("カテゴリ", "").strip()
+                    diff = row.get("目標乖離率", "").strip()
+                    if c and n:
+                        watchlist.append({
+                            "code": c,
+                            "name": n,
+                            "category": cat,
+                            "diff": diff,
+                            "memo": f"{cat} (目標乖離: {diff})" if diff else cat
+                        })
+        except Exception:
+            pass
+            
+    # 2. クラウド環境（Streamlit Cloud）などCSVが無い場合はstocks_config.jsonを使用
+    if not holdings or not watchlist:
+        config_path = os.path.join(os.path.dirname(__file__), "stocks_config.json")
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if not holdings:
+                        holdings = data.get("holdings", [])
+                    if not watchlist:
+                        watchlist = data.get("watchlist", [])
+            except Exception:
+                pass
+                
+    return {"holdings": holdings, "watchlist": watchlist}
 
 default_stocks = load_stocks_config()
 if "stock_holdings" not in st.session_state:

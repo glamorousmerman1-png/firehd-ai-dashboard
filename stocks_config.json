@@ -1,40 +1,865 @@
 {
   "holdings": [
-    {"code": "7011", "name": "三菱重工業", "category": "保有株 (主力)"},
-    {"code": "5803", "name": "フジクラ", "category": "保有株 (主力)"},
-    {"code": "9147", "name": "ＮＸＨＤ", "category": "保有株 (主力)"},
-    {"code": "6501", "name": "日立製作所", "category": "保有株 (特定/NISA)"},
-    {"code": "8316", "name": "三井住友フィナンシャルG", "category": "保有株 (NISA)"},
-    {"code": "2914", "name": "ＪＴ (日本たばこ産業)", "category": "保有株 (NISA)"},
-    {"code": "9432", "name": "ＮＴＴ", "category": "保有株 (NISA)"},
-    {"code": "8058", "name": "三菱商事", "category": "保有株 (特定)"},
-    {"code": "4063", "name": "信越化学工業", "category": "保有株 (特定)"},
-    {"code": "2702", "name": "日本マクドナルドHD", "category": "保有株 (特定)"},
-    {"code": "7581", "name": "サイゼリヤ", "category": "保有株 (特定)"},
-    {"code": "9984", "name": "ソフトバンクグループ", "category": "保有株 (特定)"},
-    {"code": "5401", "name": "日本製鉄", "category": "保有株 (NISA)"},
-    {"code": "4503", "name": "アステラス製薬", "category": "保有株 (NISA)"},
-    {"code": "1605", "name": "ＩＮＰＥＸ", "category": "保有株 (特定)"},
-    {"code": "8593", "name": "三菱ＨＣキャピタル", "category": "保有株 (特定)"},
-    {"code": "7867", "name": "タカラトミー", "category": "保有株 (特定)"},
-    {"code": "3543", "name": "コメダHD", "category": "保有株 (特定)"},
-    {"code": "9936", "name": "王将フードサービス", "category": "保有株 (特定)"},
-    {"code": "7164", "name": "全国保証", "category": "保有株 (特定)"},
-    {"code": "7239", "name": "タチエス", "category": "保有株 (特定)"},
-    {"code": "5110", "name": "住友ゴム工業", "category": "保有株 (NISA)"},
-    {"code": "6045", "name": "レントラックス", "category": "保有株 (特定)"},
-    {"code": "6140", "name": "旭ダイヤモンド工業", "category": "保有株 (NISA)"},
-    {"code": "7769", "name": "リズム", "category": "保有株 (特定)"},
-    {"code": "2108", "name": "日本甜菜製糖", "category": "保有株 (特定)"},
-    {"code": "4994", "name": "大成ラミック", "category": "保有株 (特定)"},
-    {"code": "1383", "name": "ベルグアース", "category": "保有株 (特定)"},
-    {"code": "QQQ", "name": "インベスコ QQQ (米国株ETF)", "category": "保有株 (米国ETF)"},
-    {"code": "VT", "name": "バンガード 全世界株式 (VT)", "category": "保有株 (米国ETF)"}
+    {
+      "code": "9147",
+      "name": "ＮＩＰＰＯＮ　ＥＸＰＲＥＳＳホールディングス",
+      "category": "陸運・物流",
+      "profit_rate": "71.25%"
+    },
+    {
+      "code": "8593",
+      "name": "三菱ＨＣキャピタル",
+      "category": "信用販売・カード",
+      "profit_rate": "103.21%"
+    },
+    {
+      "code": "7011",
+      "name": "三菱重工業",
+      "category": "産業機械",
+      "profit_rate": "226.43%"
+    },
+    {
+      "code": "1383",
+      "name": "ベルグアース",
+      "category": "農林水産",
+      "profit_rate": "-0.03%"
+    },
+    {
+      "code": "7239",
+      "name": "タチエス",
+      "category": "自動車部品",
+      "profit_rate": "19.97%"
+    },
+    {
+      "code": "4063",
+      "name": "信越化学工業",
+      "category": "化学",
+      "profit_rate": "-2.74%"
+    },
+    {
+      "code": "2702",
+      "name": "マクドナルド",
+      "category": "外食・レストラン",
+      "profit_rate": "34.62%"
+    },
+    {
+      "code": "7867",
+      "name": "タカラトミー",
+      "category": "Leisure",
+      "profit_rate": "-7.24%"
+    },
+    {
+      "code": "7581",
+      "name": "サイゼリヤ",
+      "category": "外食・レストラン",
+      "profit_rate": "43.20%"
+    },
+    {
+      "code": "9936",
+      "name": "王将フードサービス",
+      "category": "外食・レストラン",
+      "profit_rate": "-22.83%"
+    },
+    {
+      "code": "7164",
+      "name": "全国保証",
+      "category": "信用販売・カード",
+      "profit_rate": "-5.94%"
+    },
+    {
+      "code": "6045",
+      "name": "レントラックス",
+      "category": "広告代理店",
+      "profit_rate": "31.22%"
+    },
+    {
+      "code": "5803",
+      "name": "フジクラ",
+      "category": "Conglomerates",
+      "profit_rate": "56.20%"
+    },
+    {
+      "code": "3543",
+      "name": "コメダホールディングス",
+      "category": "外食・レストラン",
+      "profit_rate": "-4.54%"
+    },
+    {
+      "code": "4994",
+      "name": "大成ラミックグループ",
+      "category": "Packaging & Containers",
+      "profit_rate": "6.44%"
+    },
+    {
+      "code": "1605",
+      "name": "ＩＮＰＥＸ",
+      "category": "石油・天然ガス開発",
+      "profit_rate": "18.98%"
+    },
+    {
+      "code": "6501",
+      "name": "日立製作所",
+      "category": "Conglomerates",
+      "profit_rate": "7.97%"
+    },
+    {
+      "code": "8058",
+      "name": "三菱商事",
+      "category": "Conglomerates",
+      "profit_rate": "-5.69%"
+    },
+    {
+      "code": "9984",
+      "name": "ソフトバンクグループ",
+      "category": "通信・キャリア",
+      "profit_rate": "-34.54%"
+    },
+    {
+      "code": "7769",
+      "name": "リズム",
+      "category": "Luxury Goods",
+      "profit_rate": "-2.25%"
+    },
+    {
+      "code": "2108",
+      "name": "日本甜菜製糖",
+      "category": "Confectioners",
+      "profit_rate": "-1.82%"
+    },
+    {
+      "code": "1541",
+      "name": "純プラチナ上場信託（現物国内保管型）",
+      "category": "コモディティ・貴金属ETF",
+      "profit_rate": "-12.27%"
+    },
+    {
+      "code": "2914",
+      "name": "JT",
+      "category": "Tobacco",
+      "profit_rate": "88.19%"
+    },
+    {
+      "code": "4503",
+      "name": "アステラス製薬",
+      "category": "総合医薬品",
+      "profit_rate": "40.71%"
+    },
+    {
+      "code": "9432",
+      "name": "日本電信電話",
+      "category": "通信・キャリア",
+      "profit_rate": "7.20%"
+    },
+    {
+      "code": "8316",
+      "name": "三井住友フィナンシャルグループ",
+      "category": "メガバンク・総合金融",
+      "profit_rate": "84.41%"
+    },
+    {
+      "code": "5401",
+      "name": "日本製鉄",
+      "category": "鉄鋼",
+      "profit_rate": "2.96%"
+    },
+    {
+      "code": "5110",
+      "name": "住友ゴム工業",
+      "category": "自動車部品",
+      "profit_rate": "15.14%"
+    },
+    {
+      "code": "6501",
+      "name": "日立製作所",
+      "category": "Conglomerates",
+      "profit_rate": "5.72%"
+    },
+    {
+      "code": "6140",
+      "name": "旭ダイヤモンド工業",
+      "category": "Tools & Accessories",
+      "profit_rate": "-7.94%"
+    }
   ],
   "watchlist": [
-    {"code": "7203", "name": "トヨタ自動車", "memo": "世界トップの自動車大手・EV/HV戦略"},
-    {"code": "6758", "name": "ソニーグループ", "memo": "ゲーム・半導体・エンタメ複合成長"},
-    {"code": "6857", "name": "アドバンテスト", "memo": "半導体検査装置の世界大手・生成AI需要"},
-    {"code": "8035", "name": "東京エレクトロン", "memo": "半導体製造装置の国内首位"}
+    {
+      "code": "5020",
+      "name": "ENEOS",
+      "category": "石油元売り・精製",
+      "diff": "-14.84%",
+      "memo": "石油元売り・精製 (目標乖離: -14.84%)"
+    },
+    {
+      "code": "4502",
+      "name": "武田製薬工業",
+      "category": "ジェネリック・専門医薬品",
+      "diff": "-12.88%",
+      "memo": "ジェネリック・専門医薬品 (目標乖離: -12.88%)"
+    },
+    {
+      "code": "2897",
+      "name": "日清食品",
+      "category": "食料品・食品加工",
+      "diff": "-7.75%",
+      "memo": "食料品・食品加工 (目標乖離: -7.75%)"
+    },
+    {
+      "code": "4661",
+      "name": "オリエンタルランド",
+      "category": "Leisure",
+      "diff": "-4.16%",
+      "memo": "Leisure (目標乖離: -4.16%)"
+    },
+    {
+      "code": "9468",
+      "name": "KADOKAWA",
+      "category": "出版",
+      "diff": "13.59%",
+      "memo": "出版 (目標乖離: 13.59%)"
+    },
+    {
+      "code": "9434",
+      "name": "ソフトバンク",
+      "category": "通信・キャリア",
+      "diff": "-7.95%",
+      "memo": "通信・キャリア (目標乖離: -7.95%)"
+    },
+    {
+      "code": "3397",
+      "name": "トリドール",
+      "category": "外食・レストラン",
+      "diff": "6.31%",
+      "memo": "外食・レストラン (目標乖離: 6.31%)"
+    },
+    {
+      "code": "4536",
+      "name": "参天製薬",
+      "category": "総合医薬品",
+      "diff": "-22.44%",
+      "memo": "総合医薬品 (目標乖離: -22.44%)"
+    },
+    {
+      "code": "9513",
+      "name": "電源開発",
+      "category": "Utilities - Renewable",
+      "diff": "12.10%",
+      "memo": "Utilities - Renewable (目標乖離: 12.10%)"
+    },
+    {
+      "code": "2809",
+      "name": "キューピー",
+      "category": "食料品・食品加工",
+      "diff": "-6.01%",
+      "memo": "食料品・食品加工 (目標乖離: -6.01%)"
+    },
+    {
+      "code": "9104",
+      "name": "商船三井",
+      "category": "Marine Shipping",
+      "diff": "-3.27%",
+      "memo": "Marine Shipping (目標乖離: -3.27%)"
+    },
+    {
+      "code": "7735",
+      "name": "ＳＣＲＥＥＮホールディングス",
+      "category": "半導体製造装置",
+      "diff": "-27.86%",
+      "memo": "半導体製造装置 (目標乖離: -27.86%)"
+    },
+    {
+      "code": "9101",
+      "name": "日本郵船",
+      "category": "Marine Shipping",
+      "diff": "13.02%",
+      "memo": "Marine Shipping (目標乖離: 13.02%)"
+    },
+    {
+      "code": "6981",
+      "name": "村田製作所",
+      "category": "電子部品",
+      "diff": "-31.01%",
+      "memo": "電子部品 (目標乖離: -31.01%)"
+    },
+    {
+      "code": "3003",
+      "name": "ヒューリック",
+      "category": "総合不動産",
+      "diff": "-9.93%",
+      "memo": "総合不動産 (目標乖離: -9.93%)"
+    },
+    {
+      "code": "6301",
+      "name": "小松製作所",
+      "category": "Farm & Heavy Construction Machinery",
+      "diff": "9.85%",
+      "memo": "Farm & Heavy Construction Machinery (目標乖離: 9.85%)"
+    },
+    {
+      "code": "2267",
+      "name": "ヤクルト",
+      "category": "飲料",
+      "diff": "12.43%",
+      "memo": "飲料 (目標乖離: 12.43%)"
+    },
+    {
+      "code": "8473",
+      "name": "SBI",
+      "category": "金融コモディティ",
+      "diff": "-9.01%",
+      "memo": "金融コモディティ (目標乖離: -9.01%)"
+    },
+    {
+      "code": "5381",
+      "name": "Ｍｉｐｏｘ",
+      "category": "電子材料・専門化学",
+      "diff": "-",
+      "memo": "電子材料・専門化学 (目標乖離: -)"
+    },
+    {
+      "code": "3382",
+      "name": "セブン＆アイ・ホールディングス",
+      "category": "スーパーマーケット",
+      "diff": "-9.50%",
+      "memo": "スーパーマーケット (目標乖離: -9.50%)"
+    },
+    {
+      "code": "6594",
+      "name": "ニデック",
+      "category": "産業機械",
+      "diff": "0.57%",
+      "memo": "産業機械 (目標乖離: 0.57%)"
+    },
+    {
+      "code": "6367",
+      "name": "ダイキン工業",
+      "category": "Building Products & Equipment",
+      "diff": "-15.07%",
+      "memo": "Building Products & Equipment (目標乖離: -15.07%)"
+    },
+    {
+      "code": "6920",
+      "name": "レーザーテック",
+      "category": "半導体製造装置",
+      "diff": "-32.47%",
+      "memo": "半導体製造装置 (目標乖離: -32.47%)"
+    },
+    {
+      "code": "3291",
+      "name": "飯田グループホールディングス",
+      "category": "Residential Construction",
+      "diff": "-7.41%",
+      "memo": "Residential Construction (目標乖離: -7.41%)"
+    },
+    {
+      "code": "8253",
+      "name": "クレディセゾン",
+      "category": "信用販売・カード",
+      "diff": "-12.86%",
+      "memo": "信用販売・カード (目標乖離: -12.86%)"
+    },
+    {
+      "code": "8591",
+      "name": "オリックス",
+      "category": "金融コモディティ",
+      "diff": "-7.77%",
+      "memo": "金融コモディティ (目標乖離: -7.77%)"
+    },
+    {
+      "code": "2270",
+      "name": "雪印メグミルク",
+      "category": "食料品・食品加工",
+      "diff": "-4.81%",
+      "memo": "食料品・食品加工 (目標乖離: -4.81%)"
+    },
+    {
+      "code": "4540",
+      "name": "ツムラ",
+      "category": "ジェネリック・専門医薬品",
+      "diff": "-14.47%",
+      "memo": "ジェネリック・専門医薬品 (目標乖離: -14.47%)"
+    },
+    {
+      "code": "9436",
+      "name": "沖縄セルラー電話",
+      "category": "通信・キャリア",
+      "diff": "12.78%",
+      "memo": "通信・キャリア (目標乖離: 12.78%)"
+    },
+    {
+      "code": "9433",
+      "name": "KDDI",
+      "category": "通信・キャリア",
+      "diff": "1.43%",
+      "memo": "通信・キャリア (目標乖離: 1.43%)"
+    },
+    {
+      "code": "2502",
+      "name": "アサヒグループホールディングス",
+      "category": "ビール・酒類",
+      "diff": "-20.27%",
+      "memo": "ビール・酒類 (目標乖離: -20.27%)"
+    },
+    {
+      "code": "7552",
+      "name": "ハピネット",
+      "category": "小売・専門店",
+      "diff": "-",
+      "memo": "小売・専門店 (目標乖離: -)"
+    },
+    {
+      "code": "9279",
+      "name": "ギフトホールディングス",
+      "category": "外食・レストラン",
+      "diff": "-12.11%",
+      "memo": "外食・レストラン (目標乖離: -12.11%)"
+    },
+    {
+      "code": "7972",
+      "name": "イトーキ",
+      "category": "Furnishings, Fixtures & Appliances",
+      "diff": "-37.41%",
+      "memo": "Furnishings, Fixtures & Appliances (目標乖離: -37.41%)"
+    },
+    {
+      "code": "2146",
+      "name": "ＵＴグループ",
+      "category": "Staffing & Employment Services",
+      "diff": "19.47%",
+      "memo": "Staffing & Employment Services (目標乖離: 19.47%)"
+    },
+    {
+      "code": "5411",
+      "name": "ＪＦＥホールディングス",
+      "category": "鉄鋼",
+      "diff": "-0.33%",
+      "memo": "鉄鋼 (目標乖離: -0.33%)"
+    },
+    {
+      "code": "8053",
+      "name": "住友商事",
+      "category": "Conglomerates",
+      "diff": "-7.71%",
+      "memo": "Conglomerates (目標乖離: -7.71%)"
+    },
+    {
+      "code": "2503",
+      "name": "キリン",
+      "category": "ビール・酒類",
+      "diff": "-1.88%",
+      "memo": "ビール・酒類 (目標乖離: -1.88%)"
+    },
+    {
+      "code": "3563",
+      "name": "ＦＯＯＤ　＆　ＬＩＦＥ　ＣＯＭＰＡＮＩＥＳ",
+      "category": "外食・レストラン",
+      "diff": "-10.43%",
+      "memo": "外食・レストラン (目標乖離: -10.43%)"
+    },
+    {
+      "code": "7616",
+      "name": "コロワイド",
+      "category": "外食・レストラン",
+      "diff": "-",
+      "memo": "外食・レストラン (目標乖離: -)"
+    },
+    {
+      "code": "9249",
+      "name": "日本エコシステム",
+      "category": "エンターテインメント",
+      "diff": "-",
+      "memo": "エンターテインメント (目標乖離: -)"
+    },
+    {
+      "code": "1436",
+      "name": "グリーンエナジー＆カンパニー",
+      "category": "Engineering & Construction",
+      "diff": "-",
+      "memo": "Engineering & Construction (目標乖離: -)"
+    },
+    {
+      "code": "8306",
+      "name": "三菱ＵＦＪフィナンシャル・グループ",
+      "category": "メガバンク・総合金融",
+      "diff": "3.49%",
+      "memo": "メガバンク・総合金融 (目標乖離: 3.49%)"
+    },
+    {
+      "code": "4912",
+      "name": "ライオン",
+      "category": "Household & Personal Products",
+      "diff": "-12.16%",
+      "memo": "Household & Personal Products (目標乖離: -12.16%)"
+    },
+    {
+      "code": "6418",
+      "name": "日本金銭機械",
+      "category": "Business Equipment & Supplies",
+      "diff": "-",
+      "memo": "Business Equipment & Supplies (目標乖離: -)"
+    },
+    {
+      "code": "6405",
+      "name": "鈴茂器工",
+      "category": "産業機械",
+      "diff": "-",
+      "memo": "産業機械 (目標乖離: -)"
+    },
+    {
+      "code": "2432",
+      "name": "ディー・エヌ・エー",
+      "category": "Conglomerates",
+      "diff": "2.14%",
+      "memo": "Conglomerates (目標乖離: 2.14%)"
+    },
+    {
+      "code": "6050",
+      "name": "イー・ガーディアン",
+      "category": "ITサービス",
+      "diff": "-",
+      "memo": "ITサービス (目標乖離: -)"
+    },
+    {
+      "code": "2222",
+      "name": "寿スピリッツ",
+      "category": "Confectioners",
+      "diff": "-14.58%",
+      "memo": "Confectioners (目標乖離: -14.58%)"
+    },
+    {
+      "code": "2305",
+      "name": "スタジオアリス",
+      "category": "Personal Services",
+      "diff": "-",
+      "memo": "Personal Services (目標乖離: -)"
+    },
+    {
+      "code": "9997",
+      "name": "ベルーナ",
+      "category": "小売・専門店",
+      "diff": "-",
+      "memo": "小売・専門店 (目標乖離: -)"
+    },
+    {
+      "code": "4689",
+      "name": "ＬＩＮＥヤフー",
+      "category": "Internet Retail",
+      "diff": "-6.79%",
+      "memo": "Internet Retail (目標乖離: -6.79%)"
+    },
+    {
+      "code": "2413",
+      "name": "エムスリー",
+      "category": "Health Information Services",
+      "diff": "-13.93%",
+      "memo": "Health Information Services (目標乖離: -13.93%)"
+    },
+    {
+      "code": "4180",
+      "name": "Ａｐｐｉｅｒ　Ｇｒｏｕｐ",
+      "category": "インフラソフトウェア",
+      "diff": "65.25%",
+      "memo": "インフラソフトウェア (目標乖離: 65.25%)"
+    },
+    {
+      "code": "7199",
+      "name": "プレミアグループ",
+      "category": "信用販売・カード",
+      "diff": "-49.69%",
+      "memo": "信用販売・カード (目標乖離: -49.69%)"
+    },
+    {
+      "code": "3697",
+      "name": "ＳＨＩＦＴ",
+      "category": "アプリケーションソフト",
+      "diff": "-1.62%",
+      "memo": "アプリケーションソフト (目標乖離: -1.62%)"
+    },
+    {
+      "code": "9895",
+      "name": "コンセック",
+      "category": "Tools & Accessories",
+      "diff": "-",
+      "memo": "Tools & Accessories (目標乖離: -)"
+    },
+    {
+      "code": "6471",
+      "name": "日本精工",
+      "category": "自動車部品",
+      "diff": "-21.41%",
+      "memo": "自動車部品 (目標乖離: -21.41%)"
+    },
+    {
+      "code": "9663",
+      "name": "ナガワ",
+      "category": "Engineering & Construction",
+      "diff": "-",
+      "memo": "Engineering & Construction (目標乖離: -)"
+    },
+    {
+      "code": "2282",
+      "name": "日本ハム",
+      "category": "食料品・食品加工",
+      "diff": "-9.78%",
+      "memo": "食料品・食品加工 (目標乖離: -9.78%)"
+    },
+    {
+      "code": "3861",
+      "name": "王子ホールディングス",
+      "category": "Paper & Paper Products",
+      "diff": "-0.17%",
+      "memo": "Paper & Paper Products (目標乖離: -0.17%)"
+    },
+    {
+      "code": "8386",
+      "name": "百十四銀行",
+      "category": "地方銀行",
+      "diff": "-",
+      "memo": "地方銀行 (目標乖離: -)"
+    },
+    {
+      "code": "9602",
+      "name": "東宝",
+      "category": "エンターテインメント",
+      "diff": "-6.67%",
+      "memo": "エンターテインメント (目標乖離: -6.67%)"
+    },
+    {
+      "code": "6561",
+      "name": "ＨＡＮＡＴＯＵＲ　ＪＡＰＡＮ",
+      "category": "旅行・観光",
+      "diff": "-",
+      "memo": "旅行・観光 (目標乖離: -)"
+    },
+    {
+      "code": "2296",
+      "name": "伊藤ハム米久ホールディングス",
+      "category": "食料品・食品加工",
+      "diff": "-2.45%",
+      "memo": "食料品・食品加工 (目標乖離: -2.45%)"
+    },
+    {
+      "code": "3231",
+      "name": "野村不動産ホールディングス",
+      "category": "Real Estate - Development",
+      "diff": "-14.66%",
+      "memo": "Real Estate - Development (目標乖離: -14.66%)"
+    },
+    {
+      "code": "4445",
+      "name": "リビン・テクノロジーズ",
+      "category": "不動産サービス",
+      "diff": "-",
+      "memo": "不動産サービス (目標乖離: -)"
+    },
+    {
+      "code": "3992",
+      "name": "ニーズウェル",
+      "category": "インフラソフトウェア",
+      "diff": "-",
+      "memo": "インフラソフトウェア (目標乖離: -)"
+    },
+    {
+      "code": "2752",
+      "name": "フジオフードグループ本社",
+      "category": "外食・レストラン",
+      "diff": "-",
+      "memo": "外食・レストラン (目標乖離: -)"
+    },
+    {
+      "code": "4568",
+      "name": "第一三共",
+      "category": "総合医薬品",
+      "diff": "-31.79%",
+      "memo": "総合医薬品 (目標乖離: -31.79%)"
+    },
+    {
+      "code": "7127",
+      "name": "一家ホールディングス",
+      "category": "Personal Services",
+      "diff": "-",
+      "memo": "Personal Services (目標乖離: -)"
+    },
+    {
+      "code": "9107",
+      "name": "川崎汽船",
+      "category": "Marine Shipping",
+      "diff": "20.74%",
+      "memo": "Marine Shipping (目標乖離: 20.74%)"
+    },
+    {
+      "code": "8031",
+      "name": "三井物産",
+      "category": "Conglomerates",
+      "diff": "-17.62%",
+      "memo": "Conglomerates (目標乖離: -17.62%)"
+    },
+    {
+      "code": "9404",
+      "name": "日本テレビホールディングス",
+      "category": "放送・メディア",
+      "diff": "-14.50%",
+      "memo": "放送・メディア (目標乖離: -14.50%)"
+    },
+    {
+      "code": "6857",
+      "name": "アドバンテスト",
+      "category": "半導体製造装置",
+      "diff": "-20.00%",
+      "memo": "半導体製造装置 (目標乖離: -20.00%)"
+    },
+    {
+      "code": "3484",
+      "name": "イノベーションホールディングス",
+      "category": "不動産サービス",
+      "diff": "-",
+      "memo": "不動産サービス (目標乖離: -)"
+    },
+    {
+      "code": "4973",
+      "name": "日本高純度化学",
+      "category": "電子材料・専門化学",
+      "diff": "-",
+      "memo": "電子材料・専門化学 (目標乖離: -)"
+    },
+    {
+      "code": "4755",
+      "name": "楽天グループ",
+      "category": "Internet Retail",
+      "diff": "-20.87%",
+      "memo": "Internet Retail (目標乖離: -20.87%)"
+    },
+    {
+      "code": "3407",
+      "name": "旭化成",
+      "category": "Conglomerates",
+      "diff": "-18.76%",
+      "memo": "Conglomerates (目標乖離: -18.76%)"
+    },
+    {
+      "code": "3097",
+      "name": "物語コーポレーション",
+      "category": "外食・レストラン",
+      "diff": "-7.15%",
+      "memo": "外食・レストラン (目標乖離: -7.15%)"
+    },
+    {
+      "code": "7203",
+      "name": "トヨタ自動車",
+      "category": "自動車メーカー",
+      "diff": "-16.70%",
+      "memo": "自動車メーカー (目標乖離: -16.70%)"
+    },
+    {
+      "code": "7974",
+      "name": "任天堂",
+      "category": "Electronic Gaming & Multimedia",
+      "diff": "-15.71%",
+      "memo": "Electronic Gaming & Multimedia (目標乖離: -15.71%)"
+    },
+    {
+      "code": "8316",
+      "name": "三井住友フィナンシャルグループ",
+      "category": "メガバンク・総合金融",
+      "diff": "-2.59%",
+      "memo": "メガバンク・総合金融 (目標乖離: -2.59%)"
+    },
+    {
+      "code": "9982",
+      "name": "タキヒヨー",
+      "category": "Apparel Manufacturing",
+      "diff": "-",
+      "memo": "Apparel Manufacturing (目標乖離: -)"
+    },
+    {
+      "code": "2760",
+      "name": "東京エレクトロン　デバイス",
+      "category": "電子部品",
+      "diff": "-",
+      "memo": "電子部品 (目標乖離: -)"
+    },
+    {
+      "code": "3557",
+      "name": "ユナイテッド＆コレクティブ",
+      "category": "外食・レストラン",
+      "diff": "-",
+      "memo": "外食・レストラン (目標乖離: -)"
+    },
+    {
+      "code": "8267",
+      "name": "イオン",
+      "category": "百貨店",
+      "diff": "1.37%",
+      "memo": "百貨店 (目標乖離: 1.37%)"
+    },
+    {
+      "code": "285A",
+      "name": "キオクシアホールディングス",
+      "category": "半導体",
+      "diff": "-50.91%",
+      "memo": "半導体 (目標乖離: -50.91%)"
+    },
+    {
+      "code": "8928",
+      "name": "穴吹興産",
+      "category": "不動産サービス",
+      "diff": "-",
+      "memo": "不動産サービス (目標乖離: -)"
+    },
+    {
+      "code": "2938",
+      "name": "オカムラ食品工業",
+      "category": "農林水産",
+      "diff": "-",
+      "memo": "農林水産 (目標乖離: -)"
+    },
+    {
+      "code": "6814",
+      "name": "古野電気",
+      "category": "精密測定機器",
+      "diff": "-37.66%",
+      "memo": "精密測定機器 (目標乖離: -37.66%)"
+    },
+    {
+      "code": "6227",
+      "name": "AIメカテック",
+      "category": "電子部品",
+      "diff": "-49.15%",
+      "memo": "電子部品 (目標乖離: -49.15%)"
+    },
+    {
+      "code": "6954",
+      "name": "ファナック",
+      "category": "産業機械",
+      "diff": "-19.32%",
+      "memo": "産業機械 (目標乖離: -19.32%)"
+    },
+    {
+      "code": "5802",
+      "name": "住友電気工業",
+      "category": "自動車部品",
+      "diff": "-40.40%",
+      "memo": "自動車部品 (目標乖離: -40.40%)"
+    },
+    {
+      "code": "2802",
+      "name": "味の素",
+      "category": "食料品・食品加工",
+      "diff": "-15.23%",
+      "memo": "食料品・食品加工 (目標乖離: -15.23%)"
+    },
+    {
+      "code": "5801",
+      "name": "古河電気工業",
+      "category": "電気設備・部品",
+      "diff": "-37.60%",
+      "memo": "電気設備・部品 (目標乖離: -37.60%)"
+    },
+    {
+      "code": "4018",
+      "name": "Ｇｅｏｌｏｃａｔｉｏｎ　Ｔｅｃｈｎｏｌｏｇｙ",
+      "category": "その他",
+      "diff": "-",
+      "memo": "その他 (目標乖離: -)"
+    }
   ]
 }

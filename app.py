@@ -1,3 +1,4 @@
+import calendar
 import datetime
 import json
 import os
@@ -412,6 +413,202 @@ def calculate_habit_stats(tracker_data, habit_name):
             if d_str.startswith(this_month_prefix):
                 month_days += 1
     return month_days, total_days
+
+def get_monthly_habit_summary(tracker_data, year, month):
+    """指定年月の実績サマリー（記録日数、クリア総数、パーフェクト数、血圧、ゴルフ、メッセージ）を算出"""
+    import calendar
+    _, last_day = calendar.monthrange(year, month)
+    days_recorded = 0
+    total_clears = 0
+    perfect_days = 0
+    bp_sys_list = []
+    bp_dia_list = []
+    golf_days = 0
+    golf_balls = 0
+
+    for day in range(1, last_day + 1):
+        d_str = f"{year:04d}-{month:02d}-{day:02d}"
+        rec = tracker_data.get(d_str, {})
+        if not isinstance(rec, dict):
+            continue
+        
+        # 習慣クリア数
+        done_count = sum(1 for h in HABITS_LIST if rec.get(h, False))
+        has_bp = bool(rec.get("bpSys") and rec.get("bpDia"))
+        has_golf = bool(rec.get("golf", {}).get("practiced", False))
+        has_note = bool(rec.get("note", "").strip()) if isinstance(rec.get("note"), str) else False
+
+        if done_count > 0 or has_bp or has_golf or has_note:
+            days_recorded += 1
+            total_clears += done_count
+            if done_count >= len(HABITS_LIST):
+                perfect_days += 1
+        
+        if has_bp:
+            try:
+                bp_sys_list.append(int(rec["bpSys"]))
+                bp_dia_list.append(int(rec["bpDia"]))
+            except (ValueError, TypeError):
+                pass
+        
+        if has_golf:
+            golf_days += 1
+            try:
+                golf_balls += int(rec.get("golf", {}).get("balls", 0))
+            except (ValueError, TypeError):
+                pass
+
+    avg_sys = int(sum(bp_sys_list) / len(bp_sys_list)) if bp_sys_list else None
+    avg_dia = int(sum(bp_dia_list) / len(bp_dia_list)) if bp_dia_list else None
+
+    # 温かく励みになるメッセージの選定
+    if perfect_days >= 8 or total_clears >= 100:
+        message = "圧倒的な継続力です！パーフェクト達成が多数あり、健康・学習習慣が完全に自分の力になっていますね！素晴らしいです！"
+    elif perfect_days >= 3 or total_clears >= 50:
+        message = "とても素晴らしいペースで習慣をクリアできています！毎日の積み重ねが確実に大きな成果につながっていますね！"
+    elif days_recorded >= 10:
+        message = "安定したペースでしっかり記録できています！体調や予定に合わせて無理なく継続していきましょうね！"
+    elif days_recorded > 0:
+        message = "今月も一歩ずつ着実に積み重ねています！自分のペースを大切に、気持ちよく日課を続けていきましょうね！"
+    else:
+        message = "新しい月のスタートです！体調と相談しながら、日々の習慣を楽しく記録していきましょう！"
+
+    return {
+        "days_recorded": days_recorded,
+        "last_day": last_day,
+        "total_clears": total_clears,
+        "perfect_days": perfect_days,
+        "bp_count": len(bp_sys_list),
+        "avg_sys": avg_sys,
+        "avg_dia": avg_dia,
+        "golf_days": golf_days,
+        "golf_balls": golf_balls,
+        "message": message,
+    }
+
+def render_monthly_calendar_html(tracker_data, year, month, selected_date, today):
+    """指定年月のカレンダーをHTMLグリッドで描画"""
+    cal = calendar.Calendar(firstweekday=6)  # 日曜始まり
+    month_matrix = cal.monthdatescalendar(year, month)
+
+    html_parts = []
+    html_parts.append('<div style="background-color: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 14px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">')
+
+    # 曜日ヘッダー
+    week_headers = [
+        ("日", "#F87171"),
+        ("月", "#CBD5E1"),
+        ("火", "#CBD5E1"),
+        ("水", "#CBD5E1"),
+        ("木", "#CBD5E1"),
+        ("金", "#CBD5E1"),
+        ("土", "#60A5FA"),
+    ]
+    html_parts.append('<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; font-weight: 700; font-size: 0.85rem; margin-bottom: 8px;">')
+    for label, col in week_headers:
+        html_parts.append(f'<div style="color: {col}; padding: 4px 0; background: rgba(30, 41, 59, 0.5); border-radius: 6px;">{label}</div>')
+    html_parts.append('</div>')
+
+    # 日付グリッド
+    html_parts.append('<div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;">')
+
+    for week in month_matrix:
+        for d in week:
+            d_str = d.strftime("%Y-%m-%d")
+            is_cur_month = (d.month == month)
+            is_today = (d == today)
+            is_selected = (d == selected_date)
+
+            rec = tracker_data.get(d_str, {}) if is_cur_month else {}
+            if not isinstance(rec, dict):
+                rec = {}
+
+            done_count = sum(1 for h in HABITS_LIST if rec.get(h, False))
+            total_habits = len(HABITS_LIST)
+            bp_sys = rec.get("bpSys")
+            bp_dia = rec.get("bpDia")
+            golf_info = rec.get("golf", {})
+            has_golf = bool(isinstance(golf_info, dict) and golf_info.get("practiced", False))
+            golf_balls = golf_info.get("balls", 0) if has_golf else 0
+            note = str(rec.get("note", "")).strip() if rec.get("note") else ""
+
+            # マス目のスタイリング
+            if not is_cur_month:
+                cell_style = "background: rgba(15, 23, 42, 0.4); border: 1px dashed rgba(51, 65, 85, 0.4); opacity: 0.35;"
+                badge_html = ""
+            else:
+                if done_count == total_habits and total_habits > 0:
+                    cell_style = "background: linear-gradient(135deg, rgba(6, 78, 59, 0.65), rgba(5, 150, 105, 0.45)); border: 1.5px solid #10B981;"
+                    badge_html = f'<span style="background: #10B981; color: white; font-weight: 700; border-radius: 4px; padding: 1px 5px; font-size: 0.72rem; box-shadow: 0 0 6px rgba(16,185,129,0.5);">👑 {done_count}/{total_habits}</span>'
+                elif done_count >= 5:
+                    cell_style = "background: rgba(6, 95, 70, 0.35); border: 1px solid #059669;"
+                    badge_html = f'<span style="background: #059669; color: #ECFDF5; font-weight: 600; border-radius: 4px; padding: 1px 5px; font-size: 0.72rem;">✨ {done_count}/{total_habits}</span>'
+                elif done_count >= 1:
+                    cell_style = "background: rgba(22, 78, 99, 0.3); border: 1px solid #0891B2;"
+                    badge_html = f'<span style="background: #0891B2; color: #CFFAFE; font-weight: 600; border-radius: 4px; padding: 1px 5px; font-size: 0.72rem;">{done_count}/{total_habits}</span>'
+                else:
+                    cell_style = "background: rgba(30, 41, 59, 0.4); border: 1px solid #334155;"
+                    badge_html = '<span style="color: #475569; font-size: 0.72rem;">-</span>'
+
+            # 選択中と今日の特別ハイライト
+            if is_selected:
+                cell_style += " outline: 2.5px solid #F59E0B; box-shadow: 0 0 12px rgba(245, 158, 11, 0.5); z-index: 2;"
+            elif is_today:
+                cell_style += " outline: 2px solid #6366F1; box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);"
+
+            # 日付の色
+            if d.weekday() == 6:  # 日曜
+                date_num_color = "#F87171"
+            elif d.weekday() == 5:  # 土曜
+                date_num_color = "#60A5FA"
+            else:
+                date_num_color = "#F1F5F9"
+
+            top_tag = ""
+            if is_selected:
+                top_tag = '<span style="background: #F59E0B; color: #0F172A; font-size: 0.62rem; font-weight: 800; padding: 1px 4px; border-radius: 3px; margin-left: 3px;">選択中</span>'
+            elif is_today:
+                top_tag = '<span style="background: #6366F1; color: white; font-size: 0.62rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; margin-left: 3px;">TODAY</span>'
+
+            # サブ情報（血圧・ゴルフ・メモ）
+            sub_info = []
+            if bp_sys and bp_dia:
+                sub_info.append(f'<div style="color: #FCA5A5; font-size: 0.68rem; margin-top: 2px; white-space: nowrap;">🩺 {bp_sys}/{bp_dia}</div>')
+            if has_golf:
+                sub_info.append(f'<div style="color: #C4B5FD; font-size: 0.68rem; margin-top: 1px; white-space: nowrap;">🏌️ {golf_balls}球</div>')
+            if note:
+                escaped_note = note.replace('"', '&quot;')
+                sub_info.append(f'<div style="color: #94A3B8; font-size: 0.66rem; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{escaped_note}">📝 {escaped_note[:7]}</div>')
+
+            html_parts.append(f'''
+            <div style="{cell_style} border-radius: 8px; padding: 6px 7px; min-height: 82px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px;">
+                        <span style="color: {date_num_color}; font-weight: 700; font-size: 0.88rem;">{d.day}</span>
+                        <div>{top_tag}</div>
+                    </div>
+                    <div>{badge_html}</div>
+                </div>
+                <div>{"".join(sub_info)}</div>
+            </div>
+            ''')
+
+    html_parts.append('</div>')
+
+    # カレンダー凡例
+    html_parts.append('''
+    <div style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed #334155; display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.76rem; color: #94A3B8; align-items: center;">
+        <span style="font-weight: 600; color: #CBD5E1;">凡例:</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="background: #10B981; width: 10px; height: 10px; border-radius: 2px; display: inline-block;"></span> 👑 8/8 全達成</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="background: #059669; width: 10px; height: 10px; border-radius: 2px; display: inline-block;"></span> ✨ 5〜7項目</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="background: #0891B2; width: 10px; height: 10px; border-radius: 2px; display: inline-block;"></span> 1〜4項目</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="outline: 2px solid #F59E0B; width: 8px; height: 8px; border-radius: 2px; display: inline-block;"></span> 選択中の編集日</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px;"><span style="outline: 2px solid #6366F1; width: 8px; height: 8px; border-radius: 2px; display: inline-block;"></span> 本日(TODAY)</span>
+    </div>
+    ''')
+
+    html_parts.append('</div>')
+    return "".join(html_parts)
 
 def load_stocks_config():
     """stock-monitorのCSVが存在すればそこから最新読み込み、無ければstocks_config.jsonから読み込む"""
@@ -2132,37 +2329,142 @@ with tab7:
                 key="btn_dl_backup"
             )
 
-    # 日付セレクター
-    if "selected_habit_date" not in st.session_state:
-        st.session_state["selected_habit_date"] = datetime.date.today()
+    # -------------------------------------------------------------------------
+    # 1. 月間カレンダー & 頑張りサマリー
+    # -------------------------------------------------------------------------
+    today = datetime.date.today()
+    if "in_habit_date" not in st.session_state:
+        st.session_state["in_habit_date"] = today
+    if "cal_view_year" not in st.session_state:
+        st.session_state["cal_view_year"] = today.year
+    if "cal_view_month" not in st.session_state:
+        st.session_state["cal_view_month"] = today.month
 
-    d_col1, d_col2, d_col3, d_col4 = st.columns([1, 1, 2.5, 2.5])
+    cal_year = st.session_state["cal_view_year"]
+    cal_month = st.session_state["cal_view_month"]
+
+    # 年月切り替えバー
+    cal_nav1, cal_nav2, cal_nav3, cal_nav4 = st.columns([1.2, 2.5, 1.2, 1.5])
+    with cal_nav1:
+        if st.button("◀ 前月", key="btn_cal_prev_month", use_container_width=True):
+            if cal_month == 1:
+                st.session_state["cal_view_year"] -= 1
+                st.session_state["cal_view_month"] = 12
+            else:
+                st.session_state["cal_view_month"] -= 1
+            st.rerun()
+    with cal_nav2:
+        is_this_month = (cal_year == today.year and cal_month == today.month)
+        st.markdown(
+            f"""
+            <div style="text-align: center; font-size: 1.15rem; font-weight: 700; color: #F8FAFC; padding-top: 4px;">
+                📅 {cal_year}年 {cal_month}月 の実績カレンダー
+                {"<span style='background: #3B82F6; color: white; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;'>当月</span>" if is_this_month else ""}
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    with cal_nav3:
+        if st.button("翌月 ▶", key="btn_cal_next_month", use_container_width=True):
+            if cal_month == 12:
+                st.session_state["cal_view_year"] += 1
+                st.session_state["cal_view_month"] = 1
+            else:
+                st.session_state["cal_view_month"] += 1
+            st.rerun()
+    with cal_nav4:
+        if st.button("今月に戻る", key="btn_cal_reset_month", use_container_width=True):
+            st.session_state["cal_view_year"] = today.year
+            st.session_state["cal_view_month"] = today.month
+            st.rerun()
+
+    # 今月の頑張りサマリーカード
+    m_summary = get_monthly_habit_summary(tracker_data, cal_year, cal_month)
+    bp_text = f"{m_summary['avg_sys']}/{m_summary['avg_dia']} mmHg" if m_summary['avg_sys'] else "未記録"
+    golf_text = f"{m_summary['golf_days']}回 ({m_summary['golf_balls']}球)" if m_summary['golf_days'] > 0 else "なし"
+
+    st.markdown(
+        f"""
+        <div style="background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border: 1px solid #4338CA; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(67, 56, 202, 0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div style="font-size: 1.05rem; font-weight: 700; color: #E0E7FF; display: flex; align-items: center; gap: 8px;">
+                    <span>🏆 {cal_year}年{cal_month}月 の頑張りサマリー</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #A5B4FC; font-weight: 600;">
+                    記録日数: <b style="color: #F8FAFC; font-size: 0.95rem;">{m_summary['days_recorded']}</b> / {m_summary['last_day']} 日
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 8px;">
+                <div>
+                    <div style="font-size: 0.75rem; color: #94A3B8;">日課クリア総数</div>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #34D399;">{m_summary['total_clears']} <span style="font-size: 0.8rem; font-weight: 400; color: #CBD5E1;">回</span></div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: #94A3B8;">パーフェクト達成 (8/8)</div>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #FBBF24;">👑 {m_summary['perfect_days']} <span style="font-size: 0.8rem; font-weight: 400; color: #CBD5E1;">日</span></div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: #94A3B8;">血圧測定 & 平均値</div>
+                    <div style="font-size: 1.05rem; font-weight: 700; color: #F87171; margin-top: 2px;">{bp_text} <span style="font-size: 0.75rem; font-weight: 400; color: #94A3B8;">({m_summary['bp_count']}日)</span></div>
+                </div>
+                <div>
+                    <div style="font-size: 0.75rem; color: #94A3B8;">ゴルフ打ちっぱなし</div>
+                    <div style="font-size: 1.05rem; font-weight: 700; color: #C4B5FD; margin-top: 2px;">🏌️ {golf_text}</div>
+                </div>
+            </div>
+            <div style="font-size: 0.85rem; color: #FDE047; line-height: 1.4; display: flex; align-items: center; gap: 6px;">
+                <span>💬 <b>{m_summary['message']}</b></span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # カレンダーの描画（現在選択中の編集日 sel_date を渡す）
+    cur_target_date = st.session_state["in_habit_date"]
+    cal_html = render_monthly_calendar_html(tracker_data, cal_year, cal_month, cur_target_date, today)
+    st.markdown(cal_html, unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------------
+    # 2. 実績の入力・確認（日付ナビゲーション & チェックリスト）
+    # -------------------------------------------------------------------------
+    st.markdown("<div style='margin-top: 14px; margin-bottom: 8px; font-weight: 700; font-size: 1.05rem; color: #EEF2FF;'>📝 実績の入力・記録</div>", unsafe_allow_html=True)
+
+    d_col1, d_col2, d_col3, d_col4 = st.columns([1, 1, 1.8, 2.5])
     with d_col1:
         if st.button("◀ 前日", key="btn_prev_date", use_container_width=True):
-            st.session_state["selected_habit_date"] -= datetime.timedelta(days=1)
+            st.session_state["in_habit_date"] -= datetime.timedelta(days=1)
+            # 月が変わればカレンダーの表示月も連動
+            st.session_state["cal_view_year"] = st.session_state["in_habit_date"].year
+            st.session_state["cal_view_month"] = st.session_state["in_habit_date"].month
             st.rerun()
     with d_col2:
         if st.button("翌日 ▶", key="btn_next_date", use_container_width=True):
-            st.session_state["selected_habit_date"] += datetime.timedelta(days=1)
+            st.session_state["in_habit_date"] += datetime.timedelta(days=1)
+            # 月が変わればカレンダーの表示月も連動
+            st.session_state["cal_view_year"] = st.session_state["in_habit_date"].year
+            st.session_state["cal_view_month"] = st.session_state["in_habit_date"].month
             st.rerun()
     with d_col3:
         if st.button("📅 今日に戻る", key="btn_today_date", use_container_width=True):
-            st.session_state["selected_habit_date"] = datetime.date.today()
+            st.session_state["in_habit_date"] = today
+            st.session_state["cal_view_year"] = today.year
+            st.session_state["cal_view_month"] = today.month
             st.rerun()
     with d_col4:
         new_d = st.date_input(
             "対象日を選択",
-            value=st.session_state["selected_habit_date"],
             key="in_habit_date",
             label_visibility="collapsed"
         )
-        if new_d != st.session_state["selected_habit_date"]:
-            st.session_state["selected_habit_date"] = new_d
+        if new_d.year != st.session_state.get("cal_view_year") or new_d.month != st.session_state.get("cal_view_month"):
+            st.session_state["cal_view_year"] = new_d.year
+            st.session_state["cal_view_month"] = new_d.month
             st.rerun()
 
-    sel_date = st.session_state["selected_habit_date"]
+    sel_date = st.session_state["in_habit_date"]
     sel_date_str = sel_date.strftime("%Y-%m-%d")
-    is_today = (sel_date == datetime.date.today())
+    is_today = (sel_date == today)
 
     weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
     weekday_label = weekday_names[sel_date.weekday()]

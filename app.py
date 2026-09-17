@@ -1,5 +1,6 @@
 import calendar
 import datetime
+import hashlib
 import json
 import os
 import re
@@ -135,6 +136,14 @@ st.markdown(
         padding: 8px 18px;
         margin-bottom: 14px;
     }
+
+    /* カレンダーマス目のボタンスタイル（複数行テキスト対応 & タップ領域確保） */
+    div[data-testid="column"] button {
+        white-space: pre-line !important;
+        line-height: 1.25 !important;
+        padding: 6px 2px !important;
+        font-size: 0.8rem !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -158,13 +167,20 @@ def get_app_password() -> str:
     return os.environ.get("APP_PASSWORD", "")
 
 def check_password() -> bool:
-    """パスワードが正しければTrue、未認証ならログインUIを表示して停止"""
+    """パスワードが正しければTrue、未認証ならログインUIを表示して停止（URLトークンでセッション維持）"""
     required_pwd = get_app_password()
     # パスワードが未設定の場合は誰でもアクセス可能（ローカル開発等）
     if not required_pwd:
         return True
 
+    expected_token = hashlib.sha256(required_pwd.encode("utf-8")).hexdigest()[:16]
+
     if st.session_state.get("authenticated", False):
+        return True
+
+    # URLクエリパラメータに認証トークンがあれば自動ログイン（リロード・再起動時も再入力不要）
+    if st.query_params.get("_auth") == expected_token:
+        st.session_state["authenticated"] = True
         return True
 
     # ログイン画面（未認証時はサイドバーも表示させずにここでブロック）
@@ -187,6 +203,7 @@ def check_password() -> bool:
             if submit:
                 if entered_pwd == required_pwd:
                     st.session_state["authenticated"] = True
+                    st.query_params["_auth"] = expected_token
                     st.rerun()
                 else:
                     st.error("パスワードが正しくありません")
@@ -2746,7 +2763,7 @@ with tab7:
                         """,
                         unsafe_allow_html=True
                     )
-                    act_cols = st.columns([2, 1, 1])
+                    act_cols = st.columns([1.8, 1, 1])
                     with act_cols[0]:
                         cur_stat = t.get("status", "起票")
                         new_stat = st.selectbox(
@@ -2773,17 +2790,67 @@ with tab7:
                             save_taskkanri_data(tk_data)
                             st.rerun()
 
+                    # ✏️ タイトル・期限日・詳細備考の編集フォーム
+                    with st.expander("✏️ タイトル・期限・詳細備考を編集", expanded=False):
+                        with st.form(key=f"form_edit_task_{t_id}"):
+                            edit_title = st.text_input("タスク名*", value=t.get("title", ""), key=f"et_title_{t_id}")
+                            col_ed1, col_ed2 = st.columns([1, 1])
+                            with col_ed1:
+                                cur_due_str = t.get("dueDate", "")
+                                cur_due_val = None
+                                if cur_due_str:
+                                    try:
+                                        cur_due_val = datetime.datetime.strptime(cur_due_str, "%Y-%m-%d").date()
+                                    except Exception:
+                                        cur_due_val = None
+                                edit_due = st.date_input("期限日（任意）", value=cur_due_val, key=f"et_due_{t_id}")
+                            with col_ed2:
+                                edit_stat = st.selectbox(
+                                    "ステータス",
+                                    ["起票", "対応中", "完了"],
+                                    index=["起票", "対応中", "完了"].index(t.get("status", "起票")) if t.get("status") in ["起票", "対応中", "完了"] else 0,
+                                    key=f"et_stat_{t_id}"
+                                )
+                            edit_note = st.text_area("詳細・備考", value=t.get("note", ""), height=70, key=f"et_note_{t_id}", placeholder="補足事項や進捗メモなど...")
+                            save_edit_btn = st.form_submit_button("💾 変更を保存する", use_container_width=True)
+
+                            if save_edit_btn:
+                                if edit_title.strip():
+                                    t["title"] = edit_title.strip()
+                                    t["status"] = edit_stat
+                                    t["dueDate"] = edit_due.strftime("%Y-%m-%d") if edit_due else ""
+                                    t["note"] = edit_note.strip()
+                                    tk_data["adhocTasks"] = adhoc_tasks
+                                    save_taskkanri_data(tk_data)
+                                    st.success(f"タスク「{t['title']}」を更新しました！")
+                                    st.rerun()
+                                else:
+                                    st.warning("タスク名を入力してください。")
+
             if completed_adhoc:
-                with st.expander(f"✅ 完了済みタスク ({len(completed_adhoc)}件)"):
+                with st.expander(f"✅ 完了済みタスク ({len(completed_adhoc)}件)", expanded=False):
                     for t in completed_adhoc:
+                        t_id = t.get("id")
                         st.markdown(
                             f"""
-                            <div style="font-size: 0.9rem; color: #94A3B8; text-decoration: line-through; margin-bottom: 6px;">
-                                • {t.get('title')} <span style="font-size: 0.75rem; text-decoration: none;">(起票: {t.get('createdDate')})</span>
+                            <div style="font-size: 0.9rem; color: #94A3B8; text-decoration: line-through; margin-bottom: 4px;">
+                                • {t.get('title')} <span style="font-size: 0.75rem; text-decoration: none;">(起票: {t.get('createdDate')}{f' / 期限: {t.get("dueDate")}' if t.get("dueDate") else ''})</span>
                             </div>
                             """,
                             unsafe_allow_html=True
                         )
+                        c_act1, c_act2 = st.columns([2, 1])
+                        with c_act1:
+                            if st.button("↩ 未完了に戻す", key=f"btn_reopen_{t_id}", use_container_width=True):
+                                t["status"] = "対応中"
+                                tk_data["adhocTasks"] = adhoc_tasks
+                                save_taskkanri_data(tk_data)
+                                st.rerun()
+                        with c_act2:
+                            if st.button("削除", key=f"btn_del_done_{t_id}", use_container_width=True):
+                                tk_data["adhocTasks"] = [item for item in adhoc_tasks if item.get("id") != t_id]
+                                save_taskkanri_data(tk_data)
+                                st.rerun()
 
         with sub_tab_stats:
             st.markdown("<div style='font-size: 1.05rem; font-weight: 700; color: #F1F5F9; margin-bottom: 8px;'>🔥 習慣ストリーク & 達成統計</div>", unsafe_allow_html=True)
@@ -2969,13 +3036,125 @@ with tab7:
                     st.session_state["habit_ai_cheer"] = None
                     st.rerun()
 
-        # カレンダー描画（各マス目をタップすると直接その日の実績画面へジャンプ可能）
-        cur_target_date = st.session_state["habit_date_val"]
-        is_embed = (st.query_params.get("embed") == "true") or ("embed" in st.query_params)
-        cal_html = render_monthly_calendar_html(tracker_data, cal_year, cal_month, cur_target_date, today, is_embed=is_embed)
-        st.markdown(cal_html, unsafe_allow_html=True)
+        # ---------------------------------------------------------------------
+        # 月間実績カレンダー（各マス目をタップするとアプリ再起動なし・同一セッションで即ジャンプ）
+        # ---------------------------------------------------------------------
+        st.markdown(
+            """
+            <div style="font-size: 0.82rem; color: #94A3B8; margin-top: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                <span>💡 <b>カレンダーの日付マスをタップ</b> すると、同一画面のまま上の入力フォームが即座に切り替わります</span>
+                <span style="font-size: 0.76rem; color: #F59E0B; font-weight: 600;">※[★] = 現在選択中の日</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        # カレンダー下の日付ジャンプセレクター（タップでもドロップダウンでも確実にジャンプ可能）
+        cal = calendar.Calendar(firstweekday=6)  # 日曜始まり
+        month_matrix = cal.monthdatescalendar(cal_year, cal_month)
+        cur_target_date = st.session_state["habit_date_val"]
+
+        # 曜日ヘッダー
+        w_cols = st.columns(7)
+        w_headers = [("日", "#F87171"), ("月", "#CBD5E1"), ("火", "#CBD5E1"), ("水", "#CBD5E1"), ("木", "#CBD5E1"), ("金", "#CBD5E1"), ("土", "#60A5FA")]
+        for idx, (lbl, col) in enumerate(w_headers):
+            with w_cols[idx]:
+                st.markdown(f"<div style='text-align: center; font-weight: 700; color: {col}; font-size: 0.82rem; padding: 4px 0; background: #1E293B; border-radius: 6px; margin-bottom: 4px;'>{lbl}</div>", unsafe_allow_html=True)
+
+        # カレンダーコールバック
+        def _on_cal_click(target_d):
+            st.session_state["habit_date_val"] = target_d
+            st.session_state["cal_view_year"] = target_d.year
+            st.session_state["cal_view_month"] = target_d.month
+
+        # 週ごとの描画
+        for week in month_matrix:
+            row_cols = st.columns(7)
+            for c_idx, d in enumerate(week):
+                with row_cols[c_idx]:
+                    d_str = d.strftime("%Y-%m-%d")
+                    is_cur_m = (d.month == cal_month)
+                    is_td = (d == today)
+                    is_sel = (d == cur_target_date)
+
+                    if not is_cur_m:
+                        st.markdown(
+                            f"<div style='text-align: center; color: #475569; font-size: 0.78rem; padding: 18px 0; background: rgba(15,23,42,0.3); border-radius: 6px; border: 1px dashed rgba(51,65,85,0.3); margin-bottom: 6px;'>{d.day}</div>",
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        rec = tracker_data.get(d_str, {})
+                        if not isinstance(rec, dict):
+                            rec = {}
+                        d_cnt = sum(1 for h in HABITS_LIST if rec.get(h, False))
+                        tot_h = len(HABITS_LIST)
+                        bp_s = rec.get("bpSys")
+                        bp_d = rec.get("bpDia")
+                        g_info = rec.get("golf", {})
+                        has_g = bool(isinstance(g_info, dict) and g_info.get("practiced", False))
+                        g_balls = g_info.get("balls", 0) if has_g else 0
+                        n_txt = str(rec.get("note", "")).strip() if rec.get("note") else ""
+
+                        # 1行目: 日付・タグ
+                        tag_str = ""
+                        if is_td and is_sel:
+                            tag_str = " [今★]"
+                        elif is_td:
+                            tag_str = " [今]"
+                        elif is_sel:
+                            tag_str = " [★]"
+                        line1 = f"{d.day}日{tag_str}"
+
+                        # 2行目: 達成状況
+                        if d_cnt == tot_h and tot_h > 0:
+                            line2 = f"👑8/8"
+                        elif d_cnt >= 5:
+                            line2 = f"✨{d_cnt}/8"
+                        elif d_cnt > 0:
+                            line2 = f"{d_cnt}/8"
+                        else:
+                            line2 = "-"
+
+                        # 3行目: 血圧 / ゴルフ / メモ
+                        if bp_s and bp_d:
+                            line3 = f"🩺{bp_s}/{bp_d}"
+                        elif has_g:
+                            line3 = f"🏌️{g_balls}球"
+                        elif n_txt:
+                            line3 = f"📝{n_txt[:4]}"
+                        else:
+                            line3 = ""
+
+                        btn_label = f"{line1}\n{line2}"
+                        if line3:
+                            btn_label += f"\n{line3}"
+
+                        btn_kind = "primary" if is_sel else "secondary"
+                        st.button(
+                            btn_label,
+                            key=f"cal_btn_{cal_year}_{cal_month}_{d_str}",
+                            use_container_width=True,
+                            type=btn_kind,
+                            on_click=_on_cal_click,
+                            args=(d,)
+                        )
+
+        # カレンダー凡例
+        st.markdown(
+            """
+            <div style="margin-top: 10px; margin-bottom: 12px; padding-top: 6px; border-top: 1px dashed #334155; display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.76rem; color: #94A3B8; align-items: center;">
+                <span style="font-weight: 600; color: #CBD5E1;">凡例:</span>
+                <span>👑 8/8 全項目クリア</span>
+                <span>✨ 5〜7項目クリア</span>
+                <span>🩺 最高/最低血圧</span>
+                <span>🏌️ ゴルフ打球数</span>
+                <span style="color: #F59E0B; font-weight: 600;">[★] 選択中の日 (青/色枠ボタン)</span>
+                <span style="color: #6366F1; font-weight: 600;">[今] 本日</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # 日付ドロップダウンジャンプ（補足用）
         month_days_cnt = calendar.monthrange(cal_year, cal_month)[1]
         days_in_month = [datetime.date(cal_year, cal_month, d_i) for d_i in range(1, month_days_cnt + 1)]
         cur_in_month = cur_target_date if (cur_target_date.year == cal_year and cur_target_date.month == cal_month) else days_in_month[0]
@@ -2987,25 +3166,18 @@ with tab7:
                 st.session_state["cal_view_year"] = picked_day.year
                 st.session_state["cal_view_month"] = picked_day.month
 
-        col_j1, col_j2 = st.columns([3, 1.5])
-        with col_j1:
-            st.selectbox(
-                f"📅 {cal_year}年{cal_month}月 の日付を選んで直接開く",
-                options=days_in_month,
-                index=days_in_month.index(cur_in_month) if cur_in_month in days_in_month else 0,
-                format_func=lambda d: f"{d.strftime('%m月%d日')} ({weekday_names[d.weekday()]})" + (
-                    " 👑 パーフェクト" if sum(1 for h in HABITS_LIST if tracker_data.get(d.strftime('%Y-%m-%d'), {}).get(h, False)) == len(HABITS_LIST)
-                    else (f" ({sum(1 for h in HABITS_LIST if tracker_data.get(d.strftime('%Y-%m-%d'), {}).get(h, False))}/{len(HABITS_LIST)}項目)" if tracker_data.get(d.strftime('%Y-%m-%d')) else " (未記録)")
-                ),
-                key="sel_jump_day",
-                on_change=_on_cal_jump,
-                help="選んだ日付の実績入力・確認画面に即座に切り替わります"
-            )
-        with col_j2:
-            st.markdown("<div style='margin-top: 26px;'></div>", unsafe_allow_html=True)
-            if st.button("この日を開く", key="btn_confirm_jump", use_container_width=True):
-                _on_cal_jump()
-                st.rerun()
+        st.selectbox(
+            f"📅 一覧リストから日付を選んで開く ({cal_year}年{cal_month}月)",
+            options=days_in_month,
+            index=days_in_month.index(cur_in_month) if cur_in_month in days_in_month else 0,
+            format_func=lambda d: f"{d.strftime('%m月%d日')} ({weekday_names[d.weekday()]})" + (
+                " 👑 パーフェクト" if sum(1 for h in HABITS_LIST if tracker_data.get(d.strftime('%Y-%m-%d'), {}).get(h, False)) == len(HABITS_LIST)
+                else (f" ({sum(1 for h in HABITS_LIST if tracker_data.get(d.strftime('%Y-%m-%d'), {}).get(h, False))}/{len(HABITS_LIST)}項目)" if tracker_data.get(d.strftime('%Y-%m-%d')) else " (未記録)")
+            ),
+            key="sel_jump_day",
+            on_change=_on_cal_jump,
+            help="選んだ日付の実績入力・確認画面に即座に切り替わります"
+        )
 
     # -------------------------------------------------------------------------
     # 4. 折りたたみ: 過去データの移行 / バックアップ

@@ -486,6 +486,79 @@ def get_monthly_habit_summary(tracker_data, year, month):
         "message": message,
     }
 
+def generate_habit_motivation_cheer(tracker_data, adhoc_tasks, client, model_name, custom_instruction=""):
+    """ユーザーの過去・今月・本日の実績を深く分析し、全力で称賛・高評価してやる気を湧き上がらせるAIエールを生成"""
+    today = datetime.date.today()
+    today_str = today.strftime("%Y-%m-%d")
+    
+    total_days_recorded = len(tracker_data)
+    m_summary = get_monthly_habit_summary(tracker_data, today.year, today.month)
+    
+    today_rec = tracker_data.get(today_str, {})
+    if not isinstance(today_rec, dict):
+        today_rec = {}
+    today_done = [h for h in HABITS_LIST if today_rec.get(h, False)]
+    today_undone = [h for h in HABITS_LIST if not today_rec.get(h, False)]
+    
+    max_streak_habit = "日課"
+    max_streak_val = 0
+    for h in HABITS_LIST:
+        s = calculate_habit_streak(tracker_data, h)
+        if s > max_streak_val:
+            max_streak_val = s
+            max_streak_habit = h
+
+    active_tasks = [t.get("title") for t in adhoc_tasks if t.get("status") != "完了"]
+
+    prompt = f"""
+    あなたはユーザーの努力と成長を誰よりもよく理解し、心から尊敬と信頼を寄せている専属サポーターです。
+    以下のユーザーの実際の生活習慣・健康管理・学習記録のデータをじっくり読み解き、
+    ユーザーのこれまでの努力を心から高評価（好評）・大絶賛し、温かく励まし、体の奥底からやる気とエネルギーがメラメラと湧き出るような力強いメッセージを作成してください。
+
+    【ユーザーの素晴らしい実績データ】
+    - 通算記録日数: {total_days_recorded} 日間（春からずっと継続中！）
+    - 今月（{today.year}年{today.month}月）の記録日数: {m_summary['days_recorded']} / {m_summary['last_day']} 日
+    - 今月の日課クリア総数: {m_summary['total_clears']} 回！
+    - 今月のパーフェクト達成（全8項目クリア）: {m_summary['perfect_days']} 日 👑
+    - 血圧測定の継続: 今月 {m_summary['bp_count']} 回測定 (平均 {m_summary['avg_sys']}/{m_summary['avg_dia']} mmHg - 毎日の健康管理が習慣化！)
+    - ゴルフ打ちっぱなし練習: 今月 {m_summary['golf_days']} 回 ({m_summary['golf_balls']} 球)
+    - 本日（{today_str}）の達成状況: {len(today_done)}/8 項目クリア（完了: {', '.join(today_done) if today_done else 'これから取り組み'} / 残り: {', '.join(today_undone) if today_undone else 'すべて完了！'}）
+    - 最も長く連続達成中の習慣: {max_streak_habit}（現在 {max_streak_val} 日連続！）
+    - 抱えている重要ToDo: {', '.join(active_tasks[:3]) if active_tasks else 'なし（順調に消化中）'}
+
+    【メッセージ作成の重要指針】
+    1. ユーザーの努力の具体的な数字（通算{total_days_recorded}日の継続、今月{m_summary['total_clears']}回クリア、血圧の毎日の測定など）を挙げ、「これだけのことを淡々と継続できているのは本当に驚異的であり、素晴らしい自己規律です」と心から称賛・高評価してください。
+    2. 単なるお世辞ではなく、データの事実に基づいた客観的な強みや自己管理能力の高さを具体的に褒め称えてください。
+    3. 本日の未消化日課や抱えているToDoに向けて、「あなたなら必ずやり遂げられます！」「今日も自分史上最高の一日にしていきましょう！」とポジティブでワクワクするやる気を湧き立たせてください。
+
+    【出力形式】
+    以下のキーを持つJSONオブジェクトのみを出力してください（Markdownコードブロック不要、純粋なJSONテキスト）。
+    {{
+        "title": "情熱的で心に刺さる短いキャッチコピー（例: 『通算145日の軌跡！あなたの自己規律は本物です！』など）",
+        "praise": "これまでの努力や数字を具体的に称え、自己肯定感と誇らしさが高まる絶賛メッセージ（3〜4文）",
+        "motivation": "今日そして明日へ向けて、やる気と活力が満ちあふれてくる力強いエール（2〜3文）",
+        "action_nudge": "今日まず一歩踏み出すための軽やかなひと押しアドバイス（1文）"
+    }}
+    """
+    try:
+        response = client.models.generate_content(
+            model=model_name,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.75,
+                system_instruction=custom_instruction if custom_instruction else None,
+            ),
+        )
+        return json.loads(response.text)
+    except Exception as e:
+        return {
+            "title": "いつも圧倒的な努力を積み重ねています！",
+            "praise": f"通算{total_days_recorded}日もの間、毎日欠かさず記録を続けていること自体が本当に素晴らしい才能と自己規律です！今月もすでに{m_summary['total_clears']}回も日課をクリアされていて、着実に前進しています！",
+            "motivation": "日々の小さな積み重ねが、確実にあなたの力強い未来を切り拓いています！自信を持って、胸を張って進んでいきましょう！",
+            "action_nudge": "今日もできることから一つずつ、軽やかに楽しんでいきましょうね！"
+        }
+
 def render_monthly_calendar_html(tracker_data, year, month, selected_date, today):
     """指定年月のカレンダーをHTMLグリッドで描画"""
     cal = calendar.Calendar(firstweekday=6)  # 日曜始まり
@@ -799,14 +872,14 @@ if not api_key:
 # -----------------------------------------------------------------------------
 # メインタブ構成
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab7, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "🏃 習慣・健康・ToDo",
     "📊 市況ブリーフィング",
     "📈 銘柄ニュース",
     "🎯 銘柄発掘",
     "💼 ポートフォリオAI診断",
     "💡 思考整理・ブレスト",
     "📝 タスク・アドバイザー",
-    "🏃 習慣・健康・ToDo",
 ])
 
 # =============================================================================
@@ -2420,6 +2493,59 @@ with tab7:
         """
     clean_summary_html = "".join(line.strip() for line in summary_card_raw.splitlines())
     st.markdown(clean_summary_html, unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------------
+    # AI称賛 & やる気チャージ（モチベーションエール）機能
+    # -------------------------------------------------------------------------
+    col_cheer_btn, col_cheer_desc = st.columns([1.8, 3.2])
+    with col_cheer_btn:
+        btn_get_cheer = st.button("🔥 実績を称えてやる気を出す！（AIエール）", key="btn_habit_ai_cheer", use_container_width=True)
+    with col_cheer_desc:
+        st.caption("これまでの通算記録や今月のクリア実績を深く分析し、あなたの努力を大絶賛してやる気をチャージします！")
+
+    if btn_get_cheer:
+        if not client:
+            st.error("Gemini APIキーが設定されていません。サイドバーから設定してください。")
+        else:
+            with st.spinner("AIがあなたの努力と実績を読み解き、熱いエールを準備中...🔥"):
+                custom_inst = get_custom_instructions()
+                cheer_res = generate_habit_motivation_cheer(tracker_data, adhoc_tasks, client, MODEL_NAME, custom_inst)
+                st.session_state["habit_ai_cheer"] = cheer_res
+                st.rerun()
+
+    if st.session_state.get("habit_ai_cheer"):
+        cheer = st.session_state["habit_ai_cheer"]
+        cheer_card_raw = f"""
+        <div style="background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 16px 20px; margin-top: 6px; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="font-size: 1.12rem; font-weight: 800; color: #FBBF24; display: flex; align-items: center; gap: 8px;">
+                    <span>🌟 {cheer.get('title', 'あなたの努力を全力称賛！')}</span>
+                </div>
+            </div>
+            <div style="margin-bottom: 12px;">
+                <div style="font-size: 0.82rem; font-weight: 700; color: #34D399; margin-bottom: 4px;">👏 これまでの努力を心から高評価</div>
+                <div style="font-size: 0.93rem; color: #F8FAFC; line-height: 1.6; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #34D399;">
+                    {cheer.get('praise', '')}
+                </div>
+            </div>
+            <div style="margin-bottom: 10px;">
+                <div style="font-size: 0.82rem; font-weight: 700; color: #F472B6; margin-bottom: 4px;">🚀 やる気チャージ＆力強いエール</div>
+                <div style="font-size: 0.93rem; color: #FEF08A; line-height: 1.6; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #F472B6; font-weight: 500;">
+                    {cheer.get('motivation', '')}
+                </div>
+            </div>
+            <div style="font-size: 0.85rem; color: #93C5FD; display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                <span>💡 <b>今日のアクション:</b> {cheer.get('action_nudge', '')}</span>
+            </div>
+        </div>
+        """
+        clean_cheer_html = "".join(line.strip() for line in cheer_card_raw.splitlines())
+        st.markdown(clean_cheer_html, unsafe_allow_html=True)
+        col_c_close1, col_c_close2 = st.columns([1.5, 4])
+        with col_c_close1:
+            if st.button("✕ エールを閉じる", key="btn_close_cheer", use_container_width=True):
+                st.session_state["habit_ai_cheer"] = None
+                st.rerun()
 
     # カレンダーの描画（現在選択中の編集日 sel_date を渡す）
     cur_target_date = st.session_state["in_habit_date"]

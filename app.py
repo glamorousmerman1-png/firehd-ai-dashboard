@@ -1839,150 +1839,142 @@ with tab4:
             st.rerun()
 
     # -------------------------------------------------------------------------
-    # 日本株ポートフォリオ一覧（テーブル & 検索・フィルタ & CSV同期）
+    # 日本株ポートフォリオ一覧（折りたたみExpander & 検索・フィルタ & CSV同期）
     # -------------------------------------------------------------------------
-    st.markdown("<div style='margin-top: 14px; margin-bottom: 6px;'></div>", unsafe_allow_html=True)
-    h_title_col, h_sync_col = st.columns([3, 1.8])
-    with h_title_col:
-        st.markdown(
-            f"""
-            <div style="font-size: 1.15rem; font-weight: 700; color: #F8FAFC; display: flex; align-items: center; gap: 8px;">
-                <span>🇯🇵 保有日本株ポートフォリオ一覧</span>
-                <span style="background: #1E293B; border: 1px solid #3B82F6; color: #60A5FA; font-size: 0.78rem; font-weight: 600; padding: 2px 8px; border-radius: 6px;">
-                    {len(holdings_data)} 銘柄
-                </span>
-            </div>
-            <div style="font-size: 0.8rem; color: #94A3B8; margin-top: 2px;">
-                個別株の評価額・含み損益・利回り・口座区分を一覧表示。列ヘッダーをクリックして並べ替え可能です。
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with h_sync_col:
-        sync_csv_btn = st.button("🔄 stock-monitorの最新CSVと同期", key="btn_sync_stock_monitor", use_container_width=True)
-        synced_time = st.session_state.get("stocks_csv_synced_at", "")
-        if synced_time:
-            st.caption(f"最終同期: {synced_time}")
-        else:
-            if st.session_state.get("is_stocks_csv_source"):
-                st.caption("ローカルCSVから読み込み中")
+    with st.expander(f"🇯🇵 保有日本株ポートフォリオ一覧（全{len(holdings_data)}銘柄・詳細内訳）", expanded=False):
+        h_title_col, h_sync_col = st.columns([3, 1.8])
+        with h_title_col:
+            st.markdown(
+                f"""
+                <div style="font-size: 0.88rem; color: #CBD5E1; margin-top: 4px;">
+                    個別株の評価額・含み損益・利回り・口座区分を一覧表示。列ヘッダーをクリックして並べ替え可能です。
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with h_sync_col:
+            sync_csv_btn = st.button("🔄 stock-monitorの最新CSVと同期", key="btn_sync_stock_monitor", use_container_width=True)
+            synced_time = st.session_state.get("stocks_csv_synced_at", "")
+            if synced_time:
+                st.caption(f"最終同期: {synced_time}")
             else:
-                st.caption("クラウド共通データ（stocks_config.json）を表示中")
+                if st.session_state.get("is_stocks_csv_source"):
+                    st.caption("ローカルCSVから読み込み中")
+                else:
+                    st.caption("クラウド共通データ（stocks_config.json）を表示中")
 
-    if sync_csv_btn:
-        res_cfg = load_stocks_config(force_sync=True)
-        st.session_state["stock_holdings"] = res_cfg.get("holdings", [])
-        st.session_state["stock_watchlist"] = res_cfg.get("watchlist", [])
-        st.session_state["other_assets"] = res_cfg.get("other_assets", {})
-        st.session_state["stocks_csv_synced_at"] = res_cfg.get("csv_synced_at", "")
-        st.session_state["is_stocks_csv_source"] = res_cfg.get("is_csv_source", False)
-        if res_cfg.get("is_csv_source"):
-            st.success(f"✅ stock-monitorのCSVから最新データ（保有{len(res_cfg.get('holdings', []))}銘柄）を読み込み、同期保存しました！")
-        else:
-            st.info("☁️ クラウド環境のため、設定ファイル（stocks_config.json）から最新データを読み込みました。")
-        st.rerun()
+        if sync_csv_btn:
+            res_cfg = load_stocks_config(force_sync=True)
+            st.session_state["stock_holdings"] = res_cfg.get("holdings", [])
+            st.session_state["stock_watchlist"] = res_cfg.get("watchlist", [])
+            st.session_state["other_assets"] = res_cfg.get("other_assets", {})
+            st.session_state["stocks_csv_synced_at"] = res_cfg.get("csv_synced_at", "")
+            st.session_state["is_stocks_csv_source"] = res_cfg.get("is_csv_source", False)
+            if res_cfg.get("is_csv_source"):
+                st.success(f"✅ stock-monitorのCSVから最新データ（保有{len(res_cfg.get('holdings', []))}銘柄）を読み込み、同期保存しました！")
+            else:
+                st.info("☁️ クラウド環境のため、設定ファイル（stocks_config.json）から最新データを読み込みました。")
+            st.rerun()
 
-    # フィルター（カテゴリ・口座・キーワード）
-    categories = sorted(list(set(s.get("category", "その他") for s in holdings_data if s.get("category"))))
-    f_col1, f_col2, f_col3 = st.columns([1.5, 1.2, 2.3])
-    with f_col1:
-        sel_cat = st.selectbox("カテゴリ絞り込み", ["すべて"] + categories, key="sel_filter_cat")
-    with f_col2:
-        sel_acc = st.selectbox("口座区分", ["すべて", "NISA", "特定"], key="sel_filter_acc")
-    with f_col3:
-        search_kw = st.text_input("銘柄名・コードで検索", placeholder="例: 7011、三菱、飲食...", key="txt_search_stock")
+        # フィルター（カテゴリ・口座・キーワード）
+        categories = sorted(list(set(s.get("category", "その他") for s in holdings_data if s.get("category"))))
+        f_col1, f_col2, f_col3 = st.columns([1.5, 1.2, 2.3])
+        with f_col1:
+            sel_cat = st.selectbox("カテゴリ絞り込み", ["すべて"] + categories, key="sel_filter_cat")
+        with f_col2:
+            sel_acc = st.selectbox("口座区分", ["すべて", "NISA", "特定"], key="sel_filter_acc")
+        with f_col3:
+            search_kw = st.text_input("銘柄名・コードで検索", placeholder="例: 7011、三菱、飲食...", key="txt_search_stock")
 
-    # フィルタリング
-    filtered_holdings = []
-    for s in holdings_data:
-        code = str(s.get("code", ""))
-        name = str(s.get("name", ""))
-        cat = str(s.get("category", "その他"))
-        acc = str(s.get("account_type", "特定"))
-        
-        if sel_cat != "すべて" and cat != sel_cat:
-            continue
-        if sel_acc != "すべて" and acc != sel_acc:
-            continue
-        if search_kw.strip():
-            kw = search_kw.strip().lower()
-            if kw not in code.lower() and kw not in name.lower() and kw not in cat.lower():
+        # フィルタリング
+        filtered_holdings = []
+        for s in holdings_data:
+            code = str(s.get("code", ""))
+            name = str(s.get("name", ""))
+            cat = str(s.get("category", "その他"))
+            acc = str(s.get("account_type", "特定"))
+            
+            if sel_cat != "すべて" and cat != sel_cat:
                 continue
-        filtered_holdings.append(s)
+            if sel_acc != "すべて" and acc != sel_acc:
+                continue
+            if search_kw.strip():
+                kw = search_kw.strip().lower()
+                if kw not in code.lower() and kw not in name.lower() and kw not in cat.lower():
+                    continue
+            filtered_holdings.append(s)
 
-    # DataFrame構築 & 表示
-    if filtered_holdings:
-        table_rows = []
-        for s in filtered_holdings:
-            try:
-                buy_p = float(str(s.get("buy_price", 0)).replace(",", "").strip() or 0)
-                shs = float(str(s.get("shares", 0)).replace(",", "").strip() or 0)
-                cur_p = float(str(s.get("current_price", 0)).replace(",", "").strip() or buy_p or 0)
-                div_s = str(s.get("dividend_yield", "")).replace("%", "").strip()
-                div_y = float(div_s) if div_s and div_s != "-" else 0.0
+        # DataFrame構築 & 表示
+        if filtered_holdings:
+            table_rows = []
+            for s in filtered_holdings:
+                try:
+                    buy_p = float(str(s.get("buy_price", 0)).replace(",", "").strip() or 0)
+                    shs = float(str(s.get("shares", 0)).replace(",", "").strip() or 0)
+                    cur_p = float(str(s.get("current_price", 0)).replace(",", "").strip() or buy_p or 0)
+                    div_s = str(s.get("dividend_yield", "")).replace("%", "").strip()
+                    div_y = float(div_s) if div_s and div_s != "-" else 0.0
 
-                c_val = cur_p * shs
-                b_val = buy_p * shs
-                profit = c_val - b_val
-                profit_rate = (profit / b_val * 100) if b_val > 0 else 0.0
+                    c_val = cur_p * shs
+                    b_val = buy_p * shs
+                    profit = c_val - b_val
+                    profit_rate = (profit / b_val * 100) if b_val > 0 else 0.0
 
-                table_rows.append({
-                    "コード": s.get("code", ""),
-                    "銘柄名": s.get("name", ""),
-                    "カテゴリ": s.get("category", "その他"),
-                    "口座": s.get("account_type", "特定"),
-                    "株数": int(shs),
-                    "取得単価": int(buy_p),
-                    "現在株価": int(cur_p),
-                    "評価額": int(c_val),
-                    "評価損益": int(profit),
-                    "損益率(%)": round(profit_rate, 2),
-                    "配当利回り(%)": round(div_y, 2),
-                })
-            except Exception:
-                pass
+                    table_rows.append({
+                        "コード": s.get("code", ""),
+                        "銘柄名": s.get("name", ""),
+                        "カテゴリ": s.get("category", "その他"),
+                        "口座": s.get("account_type", "特定"),
+                        "株数": int(shs),
+                        "取得単価": int(buy_p),
+                        "現在株価": int(cur_p),
+                        "評価額": int(c_val),
+                        "評価損益": int(profit),
+                        "損益率(%)": round(profit_rate, 2),
+                        "配当利回り(%)": round(div_y, 2),
+                    })
+                except Exception:
+                    pass
 
-        df_holdings = pd.DataFrame(table_rows)
+            df_holdings = pd.DataFrame(table_rows)
 
-        # 絞り込み結果サマリー
-        sub_total_val = df_holdings["評価額"].sum()
-        sub_total_profit = df_holdings["評価損益"].sum()
-        sub_total_profit_r = (sub_total_profit / (sub_total_val - sub_total_profit) * 100) if (sub_total_val - sub_total_profit) > 0 else 0.0
+            # 絞り込み結果サマリー
+            sub_total_val = df_holdings["評価額"].sum()
+            sub_total_profit = df_holdings["評価損益"].sum()
+            sub_total_profit_r = (sub_total_profit / (sub_total_val - sub_total_profit) * 100) if (sub_total_val - sub_total_profit) > 0 else 0.0
 
-        st.markdown(
-            f"""
-            <div style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 16px; background: rgba(30,41,59,0.5); padding: 6px 12px; border-radius: 6px;">
-                <span>表示中: <b>{len(df_holdings)}</b> 銘柄</span>
-                <span>評価額合計: <b style="color: #F8FAFC;">¥{sub_total_val:,.0f}</b></span>
-                <span>評価損益合計: <b style="color: {'#34D399' if sub_total_profit >= 0 else '#F87171'};">{'＋' if sub_total_profit >= 0 else ''}¥{sub_total_profit:,.0f} ({'+' if sub_total_profit_r >= 0 else ''}{sub_total_profit_r:.2f}%)</b></span>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+            st.markdown(
+                f"""
+                <div style="font-size: 0.82rem; color: #CBD5E1; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 16px; background: rgba(30,41,59,0.5); padding: 6px 12px; border-radius: 6px;">
+                    <span>表示中: <b>{len(df_holdings)}</b> 銘柄</span>
+                    <span>評価額合計: <b style="color: #F8FAFC;">¥{sub_total_val:,.0f}</b></span>
+                    <span>評価損益合計: <b style="color: {'#34D399' if sub_total_profit >= 0 else '#F87171'};">{'＋' if sub_total_profit >= 0 else ''}¥{sub_total_profit:,.0f} ({'+' if sub_total_profit_r >= 0 else ''}{sub_total_profit_r:.2f}%)</b></span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
-        st.dataframe(
-            df_holdings,
-            use_container_width=True,
-            hide_index=True,
-            height=min(450, 38 + len(df_holdings) * 35),
-            column_config={
-                "コード": st.column_config.TextColumn("コード", width="small"),
-                "銘柄名": st.column_config.TextColumn("銘柄名", width="medium"),
-                "カテゴリ": st.column_config.TextColumn("カテゴリ", width="small"),
-                "口座": st.column_config.TextColumn("口座", width="small"),
-                "株数": st.column_config.NumberColumn("保有株数", format="%d 株"),
-                "取得単価": st.column_config.NumberColumn("取得単価", format="¥%d"),
-                "現在株価": st.column_config.NumberColumn("現在株価", format="¥%d"),
-                "評価額": st.column_config.NumberColumn("評価額", format="¥%d"),
-                "評価損益": st.column_config.NumberColumn("評価損益", format="¥%d"),
-                "損益率(%)": st.column_config.NumberColumn("損益率", format="%.2f %%"),
-                "配当利回り(%)": st.column_config.NumberColumn("配当利回り", format="%.2f %%"),
-            }
-        )
-    else:
-        st.info("条件に一致する銘柄がありません。")
-
-    st.markdown("<div style='margin-top: 14px; margin-bottom: 8px; border-top: 1px dashed #334155;'></div>", unsafe_allow_html=True)
+            st.dataframe(
+                df_holdings,
+                use_container_width=True,
+                hide_index=True,
+                height=min(450, 38 + len(df_holdings) * 35),
+                column_config={
+                    "コード": st.column_config.TextColumn("コード", width="small"),
+                    "銘柄名": st.column_config.TextColumn("銘柄名", width="medium"),
+                    "カテゴリ": st.column_config.TextColumn("カテゴリ", width="small"),
+                    "口座": st.column_config.TextColumn("口座", width="small"),
+                    "株数": st.column_config.NumberColumn("保有株数", format="%d 株"),
+                    "取得単価": st.column_config.NumberColumn("取得単価", format="¥%d"),
+                    "現在株価": st.column_config.NumberColumn("現在株価", format="¥%d"),
+                    "評価額": st.column_config.NumberColumn("評価額", format="¥%d"),
+                    "評価損益": st.column_config.NumberColumn("評価損益", format="¥%d"),
+                    "損益率(%)": st.column_config.NumberColumn("損益率", format="%.2f %%"),
+                    "配当利回り(%)": st.column_config.NumberColumn("配当利回り", format="%.2f %%"),
+                }
+            )
+        else:
+            st.info("条件に一致する銘柄がありません。")
 
     # 診断実行バー
     diag_col1, diag_col2 = st.columns([3.5, 1.5])

@@ -1,5 +1,1515 @@
-﻿{
-  "trackerData": {},
-  "adhocTasks": [],
-  "updated_at": "2026-09-17 09:15:00"
+{
+  "trackerData": {
+    "2026-07-08": {
+      "エクセルでの株価チェック": true,
+      "パター練習": true,
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true
+    },
+    "2026-08-17": {
+      "パター練習": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "bpDia": 85,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "bpSys": 120,
+      "血圧測定": true
+    },
+    "2026-08-01": {
+      "Google AI Studioの日記記入": true,
+      "bpDia": 85,
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "パター練習": true,
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 117
+    },
+    "2026-07-04": {
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-08-21": {
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "bpDia": 86,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "bpSys": 122
+    },
+    "2026-07-23": {
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "bpDia": 81,
+      "パター練習": true,
+      "bpSys": 104,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-05-31": {
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true,
+      "パター練習": true
+    },
+    "2026-05-22": {
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "パター練習": true,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true
+    },
+    "2026-05-11": {
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true
+    },
+    "2026-04-28": {
+      "血圧測定": true,
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "パター練習": true,
+      "プランク": true
+    },
+    "2026-06-15": {
+      "血圧測定": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "プランク": true
+    },
+    "2026-06-26": {
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "note": "体調不良",
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-05-01": {
+      "プランク": true,
+      "パター練習": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true
+    },
+    "2026-08-05": {
+      "bpSys": 109,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 79,
+      "note": "出社",
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-07-09": {
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-07-26": {
+      "血圧測定": true,
+      "note": "献血＆体調不良",
+      "bpDia": 80,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 110
+    },
+    "2026-09-02": {
+      "血圧測定": true,
+      "bpSys": 122,
+      "note": "残業",
+      "Google AI Studioの日記記入": true,
+      "bpDia": 89,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-05-13": {
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-09-03": {
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "bpSys": 119,
+      "エクセルでの株価チェック": true,
+      "bpDia": 74,
+      "Google AI Studioの日記記入": true,
+      "note": "残業"
+    },
+    "2026-07-20": {
+      "プランク": true,
+      "note": "帰省",
+      "パター練習": true,
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true
+    },
+    "2026-06-16": {
+      "Google AI Studioの日記記入": true,
+      "note": "出社",
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "スクワット": true
+    },
+    "2026-05-06": {
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true,
+      "パター練習": true,
+      "降圧ストレッチ": true
+    },
+    "2026-07-16": {
+      "血圧測定": true,
+      "bpSys": 117,
+      "スクワット": true,
+      "プランク": true,
+      "bpDia": 80,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "パター練習": true
+    },
+    "2026-05-29": {
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "スクワット": true
+    },
+    "2026-07-07": {
+      "血圧測定": true,
+      "note": "出社",
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-08-24": {
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "bpSys": 119,
+      "パター練習": true,
+      "bpDia": 77
+    },
+    "2026-08-14": {
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "bpSys": 107,
+      "note": "出社",
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 82
+    },
+    "2026-07-18": {
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "note": "帰省",
+      "bpSys": 120,
+      "降圧ストレッチ": true,
+      "bpDia": 89,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "プランク": true
+    },
+    "2026-05-07": {
+      "パター練習": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "プランク": true
+    },
+    "2026-07-15": {
+      "bpSys": 123,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 83,
+      "golfBalls": 62,
+      "エクセルでの株価チェック": true,
+      "golfPracticed": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "golf": {
+        "practiced": true,
+        "balls": 62
+      }
+    },
+    "2026-05-30": {
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "パター練習": true,
+      "プランク": true
+    },
+    "2026-07-19": {
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "note": "帰省",
+      "プランク": true,
+      "golfPracticed": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "golfBalls": 100,
+      "Google AI Studioの家計簿記入": true,
+      "golf": {
+        "practiced": true,
+        "balls": 100
+      }
+    },
+    "2026-08-10": {
+      "パター練習": true,
+      "bpSys": 116,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 84
+    },
+    "2026-08-29": {
+      "Google AI Studioの日記記入": true,
+      "note": "帰省",
+      "bpDia": 94,
+      "血圧測定": true,
+      "bpSys": 126,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-05-04": {
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "note": "旅行中",
+      "エクセルでの株価チェック": true,
+      "プランク": true
+    },
+    "2026-09-01": {
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "bpDia": 93,
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "bpSys": 126,
+      "血圧測定": true,
+      "パター練習": true
+    },
+    "2026-05-19": {
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "note": "出社"
+    },
+    "2026-05-27": {
+      "note": "出社、飲み会",
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-05-12": {
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "パター練習": true
+    },
+    "2026-09-07": {
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 81,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "bpSys": 120,
+      "スクワット": true,
+      "血圧測定": true
+    },
+    "2026-09-08": {
+      "bpSys": 116,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "bpDia": 92,
+      "Google AI Studioの家計簿記入": true,
+      "note": "出社",
+      "Google AI Studioの日記記入": true
+    },
+    "2026-08-15": {
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "bpSys": 126,
+      "パター練習": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 96,
+      "スクワット": true
+    },
+    "2026-05-02": {
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "note": "旅行中",
+      "エクセルでの株価チェック": true
+    },
+    "2026-05-03": {
+      "note": "旅行中",
+      "スクワット": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-06-25": {
+      "パター練習": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "プランク": true,
+      "降圧ストレッチ": true
+    },
+    "2026-05-09": {
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "note": "帰省中",
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "パター練習": false
+    },
+    "2026-07-01": {
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-06-11": {
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "プランク": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "パター練習": true
+    },
+    "2026-08-25": {
+      "note": "出社",
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "bpDia": 81,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 124
+    },
+    "2026-06-14": {
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true,
+      "パター練習": true,
+      "降圧ストレッチ": true
+    },
+    "2026-09-10": {
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 116,
+      "bpDia": 90,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-06-27": {
+      "降圧ストレッチ": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "パター練習": true,
+      "プランク": true
+    },
+    "2026-09-12": {
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "note": "ゲーム集中",
+      "bpDia": 90,
+      "bpSys": 127,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-07-21": {
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "bpSys": 129,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 91
+    },
+    "2026-06-02": {
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "パター練習": true
+    },
+    "2026-08-26": {
+      "エクセルでの株価チェック": true,
+      "note": "残業",
+      "bpDia": 75,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "bpSys": 120,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-07-31": {
+      "スクワット": true,
+      "血圧測定": true,
+      "bpDia": 82,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "プランク": false,
+      "bpSys": 116
+    },
+    "2026-06-20": {
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true
+    },
+    "2026-07-11": {
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "note": "安産祈願",
+      "パター練習": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-07-14": {
+      "note": "出社",
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "bpDia": 92,
+      "bpSys": 120,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": false,
+      "血圧測定": true
+    },
+    "2026-07-13": {
+      "bpSys": 104,
+      "Google AI Studioの日記記入": true,
+      "bpDia": 73,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "note": "出社",
+      "パター練習": true
+    },
+    "2026-05-28": {
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true
+    },
+    "2026-08-20": {
+      "bpDia": 88,
+      "bpSys": 134,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-07-10": {
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true,
+      "スクワット": true,
+      "降圧ストレッチ": true
+    },
+    "2026-04-29": {
+      "Google AI Studioの日記記入": true,
+      "note": "ゴルフ",
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "パター練習": true
+    },
+    "2026-04-27": {
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-06-03": {
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true,
+      "パター練習": true
+    },
+    "2026-05-26": {
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "パター練習": true,
+      "降圧ストレッチ": true
+    },
+    "2026-04-30": {
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "note": "ゲームしすぎた",
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-08-27": {
+      "スクワット": true,
+      "bpDia": 90,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 119,
+      "プランク": true,
+      "血圧測定": true
+    },
+    "2026-05-15": {
+      "note": "出社",
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-07-30": {
+      "スクワット": true,
+      "bpDia": 77,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "bpSys": 112,
+      "Google AI Studioの日記記入": true,
+      "プランク": true
+    },
+    "2026-08-18": {
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "プランク": false,
+      "bpDia": 77,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 108
+    },
+    "2026-05-21": {
+      "パター練習": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-05-14": {
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true
+    },
+    "2026-08-30": {
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "note": "帰省",
+      "Google AI Studioの日記記入": true
+    },
+    "2026-06-30": {
+      "パター練習": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-07-17": {
+      "パター練習": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "血圧測定": true,
+      "bpSys": 113,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 80,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-08-13": {
+      "golfPracticed": false,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 65,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "bpSys": 100,
+      "golfBalls": 0,
+      "note": "出社",
+      "Google AI Studioの日記記入": true,
+      "golf": {
+        "practiced": false,
+        "balls": 0
+      }
+    },
+    "2026-06-04": {
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "パター練習": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-05-24": {
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "パター練習": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-07-24": {
+      "血圧測定": true,
+      "スクワット": true,
+      "プランク": true,
+      "bpDia": 77,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 106,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-06-23": {
+      "血圧測定": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "パター練習": true
+    },
+    "2026-08-08": {
+      "降圧ストレッチ": true,
+      "パター練習": true,
+      "bpSys": 110,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "bpDia": 88
+    },
+    "2026-05-10": {
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "プランク": true,
+      "血圧測定": true,
+      "note": "帰省中"
+    },
+    "2026-06-06": {
+      "エクセルでの株価チェック": true,
+      "note": "帰省",
+      "血圧測定": false,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-08-22": {
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "note": "プライベート充実",
+      "bpDia": 86,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 119
+    },
+    "2026-05-08": {
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true,
+      "スクワット": true,
+      "降圧ストレッチ": true
+    },
+    "2026-09-09": {
+      "bpDia": 85,
+      "bpSys": 111,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-08-19": {
+      "Google AI Studioの日記記入": true,
+      "bpDia": 76,
+      "血圧測定": true,
+      "bpSys": 99,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-09-04": {
+      "bpSys": 125,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "bpDia": 84,
+      "Google AI Studioの日記記入": true,
+      "note": "出社と飲み会"
+    },
+    "2026-06-10": {
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "パター練習": true,
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "降圧ストレッチ": true
+    },
+    "2026-06-12": {
+      "パター練習": true,
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-08-11": {
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "降圧ストレッチ": true,
+      "bpDia": 94,
+      "スクワット": true,
+      "golfPracticed": true,
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "bpSys": 120,
+      "Google AI Studioの家計簿記入": true,
+      "golfBalls": 60,
+      "パター練習": true,
+      "golf": {
+        "practiced": true,
+        "balls": 60
+      }
+    },
+    "2026-06-24": {
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "note": "出社",
+      "エクセルでの株価チェック": true
+    },
+    "2026-08-06": {
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "パター練習": true,
+      "bpSys": 103,
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "bpDia": 82,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-09-11": {
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 118,
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "bpDia": 89,
+      "血圧測定": true,
+      "スクワット": true
+    },
+    "2026-07-03": {
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "note": "出社&飲み会",
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-09-06": {
+      "bpDia": 81,
+      "note": "ゲームとAIいじり",
+      "bpSys": 108,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-07-05": {
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "パター練習": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-06-29": {
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "note": "出社",
+      "血圧測定": true
+    },
+    "2026-09-16": {
+      "bpDia": 82,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "bpSys": 108,
+      "note": "出社",
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-07-06": {
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "note": "出社",
+      "エクセルでの株価チェック": true,
+      "プランク": true
+    },
+    "2026-07-12": {
+      "血圧測定": true,
+      "bpDia": 82,
+      "golfBalls": 100,
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "golfPracticed": true,
+      "bpSys": 107,
+      "golf": {
+        "practiced": true,
+        "balls": 100
+      }
+    },
+    "2026-07-27": {
+      "パター練習": true,
+      "bpDia": 89,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "血圧測定": true,
+      "bpSys": 127,
+      "エクセルでの株価チェック": true,
+      "スクワット": true
+    },
+    "2026-08-16": {
+      "bpSys": 115,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "bpDia": 82,
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-07-29": {
+      "note": "出社&飲み会",
+      "血圧測定": true,
+      "bpDia": 78,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "bpSys": 96
+    },
+    "2026-06-08": {
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "note": "出社",
+      "エクセルでの株価チェック": true,
+      "プランク": true
+    },
+    "2026-06-17": {
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "note": "出社",
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-07-22": {
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "bpDia": 79,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 109,
+      "血圧測定": true
+    },
+    "2026-09-13": {
+      "bpSys": 126,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "bpDia": 84,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true
+    },
+    "2026-08-31": {
+      "note": "出社",
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 92,
+      "bpSys": 121
+    },
+    "2026-06-22": {
+      "エクセルでの株価チェック": false,
+      "note": "出社&飲み会",
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-09-15": {
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpSys": 113,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "bpDia": 78,
+      "note": "出社"
+    },
+    "2026-05-23": {
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "スクワット": false,
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "血圧測定": true
+    },
+    "2026-06-18": {
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "血圧測定": true,
+      "スクワット": true
+    },
+    "2026-09-05": {
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 96,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "bpSys": 130
+    },
+    "2026-04-26": {
+      "Google AI Studioの家計簿記入": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-06-07": {
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "note": "帰省",
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-08-04": {
+      "note": "義母到来",
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-07-02": {
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "血圧測定": true
+    },
+    "2026-07-25": {
+      "bpSys": 125,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 97,
+      "スクワット": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-08-02": {
+      "bpSys": 134,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "bpDia": 84,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true
+    },
+    "2026-06-28": {
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "パター練習": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-06-01": {
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true
+    },
+    "2026-08-07": {
+      "エクセルでの株価チェック": true,
+      "bpSys": 128,
+      "血圧測定": true,
+      "bpDia": 83,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-08-09": {
+      "エクセルでの株価チェック": true,
+      "パター練習": true,
+      "bpSys": 108,
+      "Google AI Studioの家計簿記入": true,
+      "bpDia": 79,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true
+    },
+    "2026-09-17": {
+      "bpDia": 85,
+      "血圧測定": true,
+      "bpSys": 119
+    },
+    "2026-06-19": {
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "パター練習": true,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "血圧測定": true
+    },
+    "2026-08-28": {
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "bpSys": 121,
+      "note": "出社＆飲み会",
+      "bpDia": 73
+    },
+    "2026-09-14": {
+      "降圧ストレッチ": true,
+      "bpDia": 84,
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "エクセルでの株価チェック": true,
+      "bpSys": 124,
+      "血圧測定": true
+    },
+    "2026-06-13": {
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "プランク": true,
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "血圧測定": true
+    },
+    "2026-05-05": {
+      "Google AI Studioの家計簿記入": true,
+      "スクワット": true,
+      "プランク": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの日記記入": true,
+      "note": "旅行帰宅",
+      "エクセルでの株価チェック": true
+    },
+    "2026-08-12": {
+      "bpDia": 84,
+      "note": "出社",
+      "bpSys": 120,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true
+    },
+    "2026-06-09": {
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-05-16": {
+      "パター練習": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "Google AI Studioの日記記入": true,
+      "スクワット": true
+    },
+    "2026-06-21": {
+      "Google AI Studioの日記記入": true,
+      "パター練習": true,
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true,
+      "血圧測定": true,
+      "降圧ストレッチ": true,
+      "スクワット": true
+    },
+    "2026-05-17": {
+      "スクワット": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "パター練習": true,
+      "降圧ストレッチ": true,
+      "Google AI Studioの日記記入": true,
+      "エクセルでの株価チェック": true,
+      "プランク": true
+    },
+    "2026-07-28": {
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "bpDia": 83,
+      "Google AI Studioの日記記入": true,
+      "bpSys": 124,
+      "Google AI Studioの家計簿記入": true
+    },
+    "2026-08-23": {
+      "Google AI Studioの家計簿記入": true,
+      "パター練習": true,
+      "bpSys": 129,
+      "血圧測定": true,
+      "bpDia": 92,
+      "note": "ゲームを頑張った",
+      "エクセルでの株価チェック": true
+    },
+    "2026-08-03": {
+      "スクワット": true,
+      "Google AI Studioの日記記入": true,
+      "bpDia": 79,
+      "パター練習": true,
+      "血圧測定": true,
+      "エクセルでの株価チェック": true,
+      "bpSys": 120,
+      "降圧ストレッチ": true,
+      "Google AI Studioの家計簿記入": true,
+      "プランク": true
+    },
+    "2026-05-20": {
+      "Google AI Studioの家計簿記入": true,
+      "パター練習": true,
+      "血圧測定": true,
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "スクワット": true,
+      "エクセルでの株価チェック": true,
+      "降圧ストレッチ": true
+    },
+    "2026-06-05": {
+      "エクセルでの株価チェック": true,
+      "Google AI Studioの日記記入": true,
+      "note": "出社",
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true
+    },
+    "2026-05-25": {
+      "Google AI Studioの日記記入": true,
+      "血圧測定": true,
+      "Google AI Studioの家計簿記入": true,
+      "エクセルでの株価チェック": true
+    },
+    "2026-05-18": {
+      "Google AI Studioの日記記入": true,
+      "プランク": true,
+      "Google AI Studioの家計簿記入": true,
+      "血圧測定": true,
+      "スクワット": true,
+      "降圧ストレッチ": true,
+      "エクセルでの株価チェック": true,
+      "note": "出社"
+    }
+  },
+  "adhocTasks": [
+    {
+      "note": "ITインフラにて追加対応確認中",
+      "status": "対応中",
+      "createdAt": "2026-07-01T02:42:01.243Z",
+      "id": "1782873721243",
+      "title": "JIRA×copilotの試し",
+      "createdDate": "2026-07-01",
+      "dueDate": "2026-09-30"
+    },
+    {
+      "createdAt": "2026-07-01T02:43:00.811Z",
+      "title": "総合テスト統括とテスト移行統括の統合に向けた検討",
+      "id": "1782873780810",
+      "dueDate": "2026-08-17",
+      "createdDate": "2026-07-01",
+      "note": "再リマインド済み　資料作成済み\n8/17に周知予定",
+      "status": "完了"
+    },
+    {
+      "title": "box×copilotの試し",
+      "createdDate": "2026-07-01",
+      "createdAt": "2026-07-01T04:22:03.479Z",
+      "note": "メンバーにも協力依頼済み。継続挑戦",
+      "id": "1782879723479",
+      "dueDate": "2026-07-31",
+      "status": "完了"
+    },
+    {
+      "status": "完了",
+      "id": "1782879749664",
+      "note": "継続タスク",
+      "createdDate": "2026-07-01",
+      "title": "新copilot Studioの試し",
+      "createdAt": "2026-07-01T04:22:29.664Z",
+      "dueDate": "2026-07-24"
+    },
+    {
+      "title": "SEJAIのメールアドレス連携",
+      "dueDate": "2026-07-24",
+      "createdDate": "2026-07-09",
+      "status": "完了",
+      "note": "全体PMOの返信待ち\n7/24がアンケート期限",
+      "createdAt": "2026-07-09T06:22:40.836Z",
+      "id": "1783578160836"
+    },
+    {
+      "status": "完了",
+      "createdAt": "2026-07-30T09:47:59.415Z",
+      "createdDate": "2026-07-30",
+      "dueDate": "2026-07-31",
+      "note": "",
+      "id": "1785404879415",
+      "title": "本番切替開始審査の議事録確認"
+    },
+    {
+      "id": "1785404913897",
+      "dueDate": "2026-07-31",
+      "note": "",
+      "title": "7DCQA表",
+      "status": "完了",
+      "createdDate": "2026-07-30",
+      "createdAt": "2026-07-30T09:48:33.897Z"
+    },
+    {
+      "createdDate": "2026-08-07",
+      "createdAt": "2026-08-07T10:34:28.218Z",
+      "title": "プロジェクト定義JIRAチケット確認",
+      "status": "完了",
+      "dueDate": "2026-08-10",
+      "id": "1786098868218",
+      "note": ""
+    },
+    {
+      "createdAt": "2026-08-07T10:35:39.447Z",
+      "dueDate": "2026-08-10",
+      "createdDate": "2026-08-07",
+      "status": "完了",
+      "title": "停止対象IFの確認",
+      "id": "1786098939447",
+      "note": ""
+    },
+    {
+      "dueDate": "2026-08-17",
+      "title": "AuthleteとNW閉鎖、画面定義書のスケジュール化",
+      "id": "1786098958227",
+      "note": "",
+      "createdAt": "2026-08-07T10:35:58.227Z",
+      "createdDate": "2026-08-07",
+      "status": "完了"
+    },
+    {
+      "note": "https://www.itmedia.co.jp/aiplus/article/2608/06/2000000410/\nhttps://ledge.ai/articles/microsoft_copilot_super_app\nhttps://www.itmedia.co.jp/aiplus/article/2608/06/2000000411/\nhttps://www.itmedia.co.jp/aiplus/article/2608/06/2000000410/\nhttps://www.youtube.com/watch?v=UMAwc831LX4\nhttps://blog.cloudnative.co.jp/articles/ai-agent-api-authorization-bola-governance/",
+      "status": "完了",
+      "id": "1786100044743",
+      "dueDate": "2026-08-12",
+      "createdAt": "2026-08-07T10:54:04.743Z",
+      "title": "生成AI研究会に起票",
+      "createdDate": "2026-08-07"
+    },
+    {
+      "createdDate": "2026-08-08",
+      "createdAt": "2026-08-08T09:04:45.768Z",
+      "note": "https://teamworkgraph.com/",
+      "title": "teamwork graph お試し",
+      "status": "完了",
+      "id": "1786179885768",
+      "dueDate": "2026-08-10"
+    },
+    {
+      "id": "1788242695460",
+      "note": "https://www.itmedia.co.jp/aiplus/article/2609/15/2000001494/\nhttps://www.itmedia.co.jp/news/article/2609/16/2000001524/",
+      "dueDate": "2026-09-25",
+      "createdDate": "2026-09-14",
+      "createdAt": "2026-09-01T06:04:55.460Z",
+      "title": "生成AI研究会の定例ページに記載",
+      "status": "起票"
+    },
+    {
+      "status": "起票",
+      "createdAt": "2026-09-08T08:22:22.435Z",
+      "id": "1788855742435",
+      "createdDate": "2026-12-17",
+      "dueDate": "2026-12-24",
+      "title": "キャンペーン確認",
+      "note": "https://baby-calendar.jp/present/comotto"
+    }
+  ],
+  "updated_at": "2026-09-17 09:20:00"
 }

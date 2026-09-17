@@ -150,7 +150,7 @@ st.markdown(
 )
 
 MODEL_NAME = "gemini-2.5-flash"
-FALLBACK_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash"]
+FALLBACK_MODELS = ["gemini-3.5-flash-lite"]
 
 def safe_generate_content(client, contents, config=None, model=MODEL_NAME, max_retries=3):
     """

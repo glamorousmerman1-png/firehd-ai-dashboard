@@ -332,6 +332,87 @@ if "tasks" not in st.session_state:
 if "task_advice" not in st.session_state:
     st.session_state["task_advice"] = shared_advice
 
+# -----------------------------------------------------------------------------
+# 習慣・健康・個別タスク（taskkanri統合）ストレージ & ヘルパー
+# -----------------------------------------------------------------------------
+TASKKANRI_FILE = os.path.join(os.path.dirname(__file__), "taskkanri_data.json")
+
+HABITS_LIST = [
+    "血圧測定",
+    "プランク",
+    "スクワット",
+    "降圧ストレッチ",
+    "パター練習",
+    "Google AI Studioの日記記入",
+    "Google AI Studioの家計簿記入",
+    "エクセルでの株価チェック",
+]
+
+HABIT_CATEGORIES = {
+    "運動・健康": ["血圧測定", "プランク", "スクワット", "降圧ストレッチ", "パター練習"],
+    "記録・管理": ["Google AI Studioの日記記入", "Google AI Studioの家計簿記入", "エクセルでの株価チェック"],
+}
+
+def load_taskkanri_data():
+    """習慣トラッカーおよび個別タスクの全端末共通データを読み込む"""
+    default_data = {
+        "trackerData": {},
+        "adhocTasks": [],
+        "updated_at": ""
+    }
+    if os.path.exists(TASKKANRI_FILE):
+        try:
+            with open(TASKKANRI_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict):
+                    if "trackerData" not in data:
+                        data["trackerData"] = {}
+                    if "adhocTasks" not in data:
+                        data["adhocTasks"] = []
+                    return data
+        except Exception:
+            pass
+    return default_data
+
+def save_taskkanri_data(data):
+    """習慣トラッカーおよび個別タスクの全端末共通データを保存"""
+    data["updated_at"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    try:
+        with open(TASKKANRI_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        st.error(f"習慣・タスクデータの保存に失敗しました: {e}")
+
+def calculate_habit_streak(tracker_data, habit_name):
+    """特定習慣の現在連続達成日数（ストリーク）を計算"""
+    streak = 0
+    today = datetime.date.today()
+    for i in range(365):
+        d_str = (today - datetime.timedelta(days=i)).strftime("%Y-%m-%d")
+        day_info = tracker_data.get(d_str, {})
+        is_done = day_info.get(habit_name, False) if isinstance(day_info, dict) else bool(day_info)
+        if i == 0 and not is_done:
+            continue
+        if is_done:
+            streak += 1
+        else:
+            break
+    return streak
+
+def calculate_habit_stats(tracker_data, habit_name):
+    """今月の達成日数と通算達成日数を計算"""
+    today = datetime.date.today()
+    this_month_prefix = today.strftime("%Y-%m")
+    total_days = 0
+    month_days = 0
+    for d_str, day_info in tracker_data.items():
+        is_done = day_info.get(habit_name, False) if isinstance(day_info, dict) else bool(day_info)
+        if is_done:
+            total_days += 1
+            if d_str.startswith(this_month_prefix):
+                month_days += 1
+    return month_days, total_days
+
 def load_stocks_config():
     """stock-monitorのCSVが存在すればそこから最新読み込み、無ければstocks_config.jsonから読み込む"""
     portfolio_csv = "G:/マイドライブ/Antiglavity/.agent/stock-monitor/portfolio.csv"
@@ -519,13 +600,14 @@ if not api_key:
 # -----------------------------------------------------------------------------
 # メインタブ構成
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📊 市況ブリーフィング",
     "📈 銘柄ニュース",
     "🎯 銘柄発掘",
     "💼 ポートフォリオAI診断",
     "💡 思考整理・ブレスト",
     "📝 タスク・アドバイザー",
+    "🏃 習慣・健康・ToDo",
 ])
 
 # =============================================================================
@@ -1891,6 +1973,17 @@ with tab6:
                     task_summary_text = f"【未完了タスク】: {', '.join(active_tasks) if active_tasks else 'なし'}\n"
                     task_summary_text += f"【完了済みタスク】: {', '.join(done_tasks) if done_tasks else 'なし'}"
 
+                    # 習慣トラッカー・個別タスクの今日の未完了状況もAIプロンプトに統合
+                    today_str = datetime.date.today().strftime("%Y-%m-%d")
+                    tk_data_current = load_taskkanri_data()
+                    today_habits = tk_data_current.get("trackerData", {}).get(today_str, {})
+                    incomplete_habits = [h for h in HABITS_LIST if not today_habits.get(h, False)]
+                    incomplete_adhoc = [t.get("title") for t in tk_data_current.get("adhocTasks", []) if t.get("status") != "完了"]
+                    if incomplete_habits:
+                        task_summary_text += f"\n【本日の未完了日課（習慣・健康）】: {', '.join(incomplete_habits)}"
+                    if incomplete_adhoc:
+                        task_summary_text += f"\n【進行中の重要個別ToDo】: {', '.join(incomplete_adhoc[:5])}"
+
                     prompt = f"""
                     あなたは卓越した生産性コーチです。
                     以下のユーザーのタスクリストを分析し、最も効果的に一日を過ごすためのアドバイスを提供してください。
@@ -1947,3 +2040,367 @@ with tab6:
                 """,
                 unsafe_allow_html=True,
             )
+
+# =============================================================================
+# タブ7：習慣・健康・ToDo（Habit & Health & Task Tracker）
+# =============================================================================
+with tab7:
+    tk_data = load_taskkanri_data()
+    tracker_data = tk_data.get("trackerData", {})
+    adhoc_tasks = tk_data.get("adhocTasks", [])
+
+    # ヘッダー
+    t7_h1, t7_h2 = st.columns([3, 1.5])
+    with t7_h1:
+        st.markdown(
+            """
+            <div style="font-size: 1.15rem; font-weight: 700; color: #F8FAFC; margin-bottom: 2px;">
+                🏃 毎日の習慣・健康記録 & 個別タスク
+            </div>
+            <div style="font-size: 0.8rem; color: #94A3B8; margin-bottom: 10px;">
+                日課の達成記録・血圧・ゴルフ球数・個別ToDoを全端末で一元管理（過去データ完全保持）
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with t7_h2:
+        if st.button("🔄 最新データを再読込", key="btn_sync_taskkanri", use_container_width=True):
+            st.rerun()
+
+    # データ移行・インポート / エクスポート用 Expander
+    with st.expander("📥 過去データの移行（JSON貼り付け）/ 💾 バックアップ"):
+        st.markdown(
+            """
+            <div style="font-size: 0.88rem; color: #CBD5E1; margin-bottom: 8px;">
+                <b>過去の記録を引き継ぐ方法:</b><br>
+                以前のタスク管理アプリ（<code>taskkanri</code>）で「💾 データをバックアップ」からダウンロードしたJSONファイルの内容、またはFirebase FirestoreからコピーしたJSONテキストを、下の枠にそのまま貼り付けて「インポート実行」ボタンを押してください。<br>
+                過去の日課実績・血圧・メモ・タスクがすべて復元され、安全に保管されます。
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        import_text = st.text_area("JSONデータを貼り付け", height=120, placeholder='{"trackerData": {...}, "adhocTasks": [...]} または Firestoreのデータ', key="ta_import_json")
+        btn_col_imp1, btn_col_imp2 = st.columns([1.5, 2.5])
+        with btn_col_imp1:
+            if st.button("📥 インポート実行", key="btn_do_import", use_container_width=True):
+                if import_text.strip():
+                    try:
+                        parsed = json.loads(import_text.strip())
+                        imported_tracker = {}
+                        imported_tasks = []
+
+                        if isinstance(parsed, dict):
+                            if "trackerData" in parsed and isinstance(parsed["trackerData"], dict):
+                                imported_tracker = parsed["trackerData"]
+                            else:
+                                if any(isinstance(v, (dict, bool)) for v in parsed.values()):
+                                    imported_tracker = parsed
+
+                            if "adhocTasks" in parsed and isinstance(parsed["adhocTasks"], list):
+                                imported_tasks = parsed["adhocTasks"]
+                        
+                        merged_tracker = {**tracker_data, **imported_tracker}
+                        existing_ids = {t.get("id") for t in adhoc_tasks}
+                        merged_tasks = list(adhoc_tasks)
+                        for t in imported_tasks:
+                            if t.get("id") not in existing_ids:
+                                merged_tasks.append(t)
+                                existing_ids.add(t.get("id"))
+                            else:
+                                for idx, et in enumerate(merged_tasks):
+                                    if et.get("id") == t.get("id"):
+                                        merged_tasks[idx] = t
+
+                        tk_data["trackerData"] = merged_tracker
+                        tk_data["adhocTasks"] = merged_tasks
+                        save_taskkanri_data(tk_data)
+                        st.success(f"✅ インポート成功！日課記録 {len(merged_tracker)} 日分、個別タスク {len(merged_tasks)} 件を保存・復元しました。")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"JSONの解析に失敗しました: {e}")
+                else:
+                    st.warning("JSONテキストを入力してください。")
+        with btn_col_imp2:
+            current_json_str = json.dumps(tk_data, ensure_ascii=False, indent=2)
+            today_str = datetime.date.today().strftime("%Y-%m-%d")
+            st.download_button(
+                label="💾 現在の全データをJSONダウンロード（バックアップ）",
+                data=current_json_str,
+                file_name=f"habit-tracker-backup-{today_str}.json",
+                mime="application/json",
+                use_container_width=True,
+                key="btn_dl_backup"
+            )
+
+    # 日付セレクター
+    if "selected_habit_date" not in st.session_state:
+        st.session_state["selected_habit_date"] = datetime.date.today()
+
+    d_col1, d_col2, d_col3, d_col4 = st.columns([1, 1, 2.5, 2.5])
+    with d_col1:
+        if st.button("◀ 前日", key="btn_prev_date", use_container_width=True):
+            st.session_state["selected_habit_date"] -= datetime.timedelta(days=1)
+            st.rerun()
+    with d_col2:
+        if st.button("翌日 ▶", key="btn_next_date", use_container_width=True):
+            st.session_state["selected_habit_date"] += datetime.timedelta(days=1)
+            st.rerun()
+    with d_col3:
+        if st.button("📅 今日に戻る", key="btn_today_date", use_container_width=True):
+            st.session_state["selected_habit_date"] = datetime.date.today()
+            st.rerun()
+    with d_col4:
+        new_d = st.date_input(
+            "対象日を選択",
+            value=st.session_state["selected_habit_date"],
+            key="in_habit_date",
+            label_visibility="collapsed"
+        )
+        if new_d != st.session_state["selected_habit_date"]:
+            st.session_state["selected_habit_date"] = new_d
+            st.rerun()
+
+    sel_date = st.session_state["selected_habit_date"]
+    sel_date_str = sel_date.strftime("%Y-%m-%d")
+    is_today = (sel_date == datetime.date.today())
+
+    weekday_names = ["月", "火", "水", "木", "金", "土", "日"]
+    weekday_label = weekday_names[sel_date.weekday()]
+
+    day_record = tracker_data.get(sel_date_str, {})
+    if not isinstance(day_record, dict):
+        day_record = {}
+
+    st.markdown(
+        f"""
+        <div style="font-size: 1.1rem; font-weight: 700; color: #EEF2FF; margin-top: 10px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>📅 {sel_date.strftime('%Y年%m月%d日')} ({weekday_label}) の実績</span>
+            {"<span class='category-badge badge-neutral' style='background: #4338CA; color: white;'>TODAY</span>" if is_today else "<span class='category-badge badge-neutral' style='background: #475569; color: #CBD5E1;'>過去記録</span>"}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col_habits, col_adhoc = st.columns([1.15, 1.1], gap="large")
+
+    # 左カラム：日課の達成チェック & 血圧 & ゴルフ & 備考
+    with col_habits:
+        st.markdown("<div style='font-size: 1.05rem; font-weight: 700; color: #F1F5F9; margin-bottom: 8px;'>✅ 定常日課チェックリスト</div>", unsafe_allow_html=True)
+
+        done_count = sum(1 for h in HABITS_LIST if day_record.get(h, False))
+        total_habits = len(HABITS_LIST)
+        progress_rate = done_count / total_habits if total_habits > 0 else 0
+        st.progress(progress_rate, text=f"達成度: {done_count} / {total_habits} 項目 ({int(progress_rate * 100)}%)")
+
+        with st.form(key=f"form_habits_{sel_date_str}"):
+            updated_day = dict(day_record)
+
+            st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #38BDF8; margin-top: 12px; margin-bottom: 6px;'>🏃 運動・健康カテゴリ</div>", unsafe_allow_html=True)
+            for habit in HABIT_CATEGORIES["運動・健康"]:
+                val = day_record.get(habit, False)
+                checked = st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
+                updated_day[habit] = checked
+
+                if habit == "血圧測定":
+                    if checked:
+                        bp_cols = st.columns([2, 2, 2])
+                        with bp_cols[0]:
+                            cur_sys = day_record.get("bpSys", "")
+                            new_sys = st.number_input("最高血圧(上)", min_value=0, max_value=300, value=int(cur_sys) if cur_sys else 0, step=1, key=f"sys_{sel_date_str}", help="最高血圧（収縮期）")
+                            if new_sys > 0:
+                                updated_day["bpSys"] = int(new_sys)
+                            else:
+                                updated_day.pop("bpSys", None)
+                        with bp_cols[1]:
+                            cur_dia = day_record.get("bpDia", "")
+                            new_dia = st.number_input("最低血圧(下)", min_value=0, max_value=200, value=int(cur_dia) if cur_dia else 0, step=1, key=f"dia_{sel_date_str}", help="最低血圧（拡張期）")
+                            if new_dia > 0:
+                                updated_day["bpDia"] = int(new_dia)
+                            else:
+                                updated_day.pop("bpDia", None)
+                        with bp_cols[2]:
+                            st.markdown("<div style='margin-top: 32px; font-size: 0.9rem; color: #94A3B8;'>mmHg</div>", unsafe_allow_html=True)
+                    else:
+                        updated_day.pop("bpSys", None)
+                        updated_day.pop("bpDia", None)
+
+            st.markdown("<div style='margin-top: 14px; font-size: 0.95rem; font-weight: 700; color: #F59E0B; margin-bottom: 6px;'>📝 記録・管理カテゴリ</div>", unsafe_allow_html=True)
+            for habit in HABIT_CATEGORIES["記録・管理"]:
+                val = day_record.get(habit, False)
+                checked = st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
+                updated_day[habit] = checked
+
+            st.markdown("<div style='margin-top: 14px; padding-top: 10px; border-top: 1px dashed #334155;'></div>", unsafe_allow_html=True)
+            golf_info = day_record.get("golf", {})
+            if not isinstance(golf_info, dict):
+                golf_info = {}
+            golf_checked = st.checkbox("🏌️ ゴルフの打ちっぱなしに行った", value=bool(golf_info.get("practiced", False)), key=f"chk_golf_{sel_date_str}")
+            if golf_checked:
+                cur_balls = golf_info.get("balls", 0)
+                new_balls = st.number_input("打った球数（球）", min_value=0, max_value=999, value=int(cur_balls) if cur_balls else 50, step=10, key=f"num_golf_balls_{sel_date_str}")
+                updated_day["golf"] = {"practiced": True, "balls": int(new_balls)}
+            else:
+                updated_day["golf"] = {"practiced": False, "balls": 0}
+
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
+            cur_note = day_record.get("note", "")
+            new_note = st.text_input("📝 備考 (未消化の理由など・最大20文字)", value=str(cur_note) if cur_note else "", max_chars=20, key=f"txt_note_{sel_date_str}", placeholder="例: 疲労のためスクワット休み")
+            updated_day["note"] = new_note.strip()
+
+            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+            save_habit_btn = st.form_submit_button("💾 実績を保存する", use_container_width=True)
+
+            if save_habit_btn:
+                tracker_data[sel_date_str] = updated_day
+                tk_data["trackerData"] = tracker_data
+                save_taskkanri_data(tk_data)
+                st.success(f"{sel_date_str} の実績を保存しました！")
+                st.rerun()
+
+    # 右カラム：個別タスク（ToDo）& 習慣ストリーク
+    with col_adhoc:
+        sub_tab_adhoc, sub_tab_stats = st.tabs(["📋 個別タスク（ToDo）", "🔥 習慣ストリーク統計"])
+
+        with sub_tab_adhoc:
+            st.markdown("<div style='font-size: 1.05rem; font-weight: 700; color: #F1F5F9; margin-bottom: 8px;'>📋 個別タスク（Adhoc Tasks）</div>", unsafe_allow_html=True)
+
+            with st.expander("＋ 新規個別タスクを追加", expanded=False):
+                with st.form(key="form_add_adhoc_task", clear_on_submit=True):
+                    task_title = st.text_input("タスク名*", placeholder="例: 来週の発表に向けた資料作成")
+                    add_col_s1, add_col_s2 = st.columns([1, 1])
+                    with add_col_s1:
+                        task_status = st.selectbox("ステータス", ["起票", "対応中", "完了"], index=0)
+                    with add_col_s2:
+                        task_due = st.date_input("期限日（任意）", value=None)
+                    task_note = st.text_area("詳細・備考", placeholder="補足事項や進捗メモなど...", height=70)
+                    submit_adhoc = st.form_submit_button("＋ タスクを登録", use_container_width=True)
+
+                    if submit_adhoc and task_title.strip():
+                        new_t = {
+                            "id": str(int(time.time() * 1000)),
+                            "createdDate": sel_date_str,
+                            "title": task_title.strip(),
+                            "status": task_status,
+                            "dueDate": task_due.strftime("%Y-%m-%d") if task_due else "",
+                            "note": task_note.strip(),
+                            "createdAt": datetime.datetime.now().isoformat()
+                        }
+                        adhoc_tasks.append(new_t)
+                        tk_data["adhocTasks"] = adhoc_tasks
+                        save_taskkanri_data(tk_data)
+                        st.success(f"タスク「{task_title.strip()}」を登録しました！")
+                        st.rerun()
+
+            active_adhoc = [t for t in adhoc_tasks if t.get("status") != "完了"]
+            completed_adhoc = [t for t in adhoc_tasks if t.get("status") == "完了"]
+            active_adhoc.sort(key=lambda x: (x.get("dueDate") == "", x.get("dueDate", "")))
+
+            st.markdown(f"<div style='font-size: 0.95rem; font-weight: 700; color: #818CF8; margin-top: 10px; margin-bottom: 6px;'>進行中のタスク ({len(active_adhoc)}件)</div>", unsafe_allow_html=True)
+            if not active_adhoc:
+                st.caption("現在進行中のタスクはありません。")
+            else:
+                for t in active_adhoc:
+                    t_id = t.get("id")
+                    status_colors = {"起票": "#38BDF8", "対応中": "#F59E0B", "完了": "#10B981"}
+                    due_badge = f"<span style='color: #F87171; font-size: 0.8rem; font-weight: 600; margin-left: 6px;'>📅 期限: {t.get('dueDate')}</span>" if t.get("dueDate") else ""
+                    
+                    st.markdown(
+                        f"""
+                        <div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 600; color: #F8FAFC; font-size: 0.95rem;">{t.get('title')}</span>
+                                <span style="background-color: {status_colors.get(t.get('status'), '#6366F1')}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">{t.get('status')}</span>
+                            </div>
+                            <div style="font-size: 0.8rem; color: #94A3B8;">起票: {t.get('createdDate', '')} {due_badge}</div>
+                            {f"<div style='font-size: 0.85rem; color: #CBD5E1; margin-top: 4px; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;'>{t.get('note')}</div>" if t.get('note') else ''}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                    act_cols = st.columns([2, 1, 1])
+                    with act_cols[0]:
+                        cur_stat = t.get("status", "起票")
+                        new_stat = st.selectbox(
+                            "ステータス変更",
+                            ["起票", "対応中", "完了"],
+                            index=["起票", "対応中", "完了"].index(cur_stat) if cur_stat in ["起票", "対応中", "完了"] else 0,
+                            key=f"sel_stat_{t_id}",
+                            label_visibility="collapsed"
+                        )
+                        if new_stat != cur_stat:
+                            t["status"] = new_stat
+                            tk_data["adhocTasks"] = adhoc_tasks
+                            save_taskkanri_data(tk_data)
+                            st.rerun()
+                    with act_cols[1]:
+                        if st.button("完了", key=f"btn_complete_{t_id}", use_container_width=True):
+                            t["status"] = "完了"
+                            tk_data["adhocTasks"] = adhoc_tasks
+                            save_taskkanri_data(tk_data)
+                            st.rerun()
+                    with act_cols[2]:
+                        if st.button("削除", key=f"btn_del_adhoc_{t_id}", use_container_width=True):
+                            tk_data["adhocTasks"] = [item for item in adhoc_tasks if item.get("id") != t_id]
+                            save_taskkanri_data(tk_data)
+                            st.rerun()
+
+            if completed_adhoc:
+                with st.expander(f"✅ 完了済みタスク ({len(completed_adhoc)}件)"):
+                    for t in completed_adhoc:
+                        st.markdown(
+                            f"""
+                            <div style="font-size: 0.9rem; color: #94A3B8; text-decoration: line-through; margin-bottom: 6px;">
+                                • {t.get('title')} <span style="font-size: 0.75rem; text-decoration: none;">(起票: {t.get('createdDate')})</span>
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+        with sub_tab_stats:
+            st.markdown("<div style='font-size: 1.05rem; font-weight: 700; color: #F1F5F9; margin-bottom: 8px;'>🔥 習慣ストリーク & 達成統計</div>", unsafe_allow_html=True)
+            
+            today = datetime.date.today()
+            start_of_week = today - datetime.timedelta(days=today.weekday())
+            weekly_golf_count = 0
+            weekly_golf_balls = 0
+            for w in range(7):
+                w_day_str = (start_of_week + datetime.timedelta(days=w)).strftime("%Y-%m-%d")
+                w_rec = tracker_data.get(w_day_str, {})
+                if isinstance(w_rec, dict) and w_rec.get("golf", {}).get("practiced", False):
+                    weekly_golf_count += 1
+                    weekly_golf_balls += w_rec.get("golf", {}).get("balls", 0)
+
+            st.markdown(
+                f"""
+                <div class="dashboard-card" style="border-left: 4px solid #8B5CF6; margin-bottom: 14px; padding: 12px 16px;">
+                    <div style="font-weight: 700; color: #C4B5FD; font-size: 0.95rem; margin-bottom: 6px;">🏌️ ゴルフ打ちっぱなし実績 (今週)</div>
+                    <div style="display: flex; gap: 24px;">
+                        <div><span style="font-size: 1.4rem; font-weight: 700; color: #F8FAFC;">{weekly_golf_count}</span> <span style="font-size: 0.85rem; color: #94A3B8;">回</span></div>
+                        <div><span style="font-size: 1.4rem; font-weight: 700; color: #F8FAFC;">{weekly_golf_balls}</span> <span style="font-size: 0.85rem; color: #94A3B8;">球</span></div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+            for habit in HABITS_LIST:
+                streak = calculate_habit_streak(tracker_data, habit)
+                month_days, total_days = calculate_habit_stats(tracker_data, habit)
+                streak_icon = "🔥" if streak >= 3 else "⚡"
+                st.markdown(
+                    f"""
+                    <div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 8px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-weight: 600; color: #F8FAFC; font-size: 0.9rem;">{habit}</span>
+                            <div style="font-size: 0.78rem; color: #94A3B8; margin-top: 2px;">
+                                今月: <b style="color: #60A5FA;">{month_days}日</b> | 累計: <b style="color: #CBD5E1;">{total_days}日</b>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="font-size: 1.1rem; font-weight: 700; color: {'#F59E0B' if streak >= 3 else '#CBD5E1'};">{streak_icon} {streak}</span>
+                            <span style="font-size: 0.75rem; color: #94A3B8;">日連続</span>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )

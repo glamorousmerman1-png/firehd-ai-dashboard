@@ -608,7 +608,9 @@ def render_monthly_calendar_html(tracker_data, year, month, selected_date, today
     ''')
 
     html_parts.append('</div>')
-    return "".join(html_parts)
+    raw_html = "".join(html_parts)
+    clean_html = "".join(line.strip() for line in raw_html.splitlines())
+    return clean_html
 
 def load_stocks_config():
     """stock-monitorのCSVが存在すればそこから最新読み込み、無ければstocks_config.jsonから読み込む"""
@@ -2383,8 +2385,7 @@ with tab7:
     bp_text = f"{m_summary['avg_sys']}/{m_summary['avg_dia']} mmHg" if m_summary['avg_sys'] else "未記録"
     golf_text = f"{m_summary['golf_days']}回 ({m_summary['golf_balls']}球)" if m_summary['golf_days'] > 0 else "なし"
 
-    st.markdown(
-        f"""
+    summary_card_raw = f"""
         <div style="background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border: 1px solid #4338CA; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(67, 56, 202, 0.25);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <div style="font-size: 1.05rem; font-weight: 700; color: #E0E7FF; display: flex; align-items: center; gap: 8px;">
@@ -2416,9 +2417,9 @@ with tab7:
                 <span>💬 <b>{m_summary['message']}</b></span>
             </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+    clean_summary_html = "".join(line.strip() for line in summary_card_raw.splitlines())
+    st.markdown(clean_summary_html, unsafe_allow_html=True)
 
     # カレンダーの描画（現在選択中の編集日 sel_date を渡す）
     cur_target_date = st.session_state["in_habit_date"]

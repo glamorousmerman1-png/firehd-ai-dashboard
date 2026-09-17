@@ -560,13 +560,33 @@ def generate_habit_motivation_cheer(tracker_data, adhoc_tasks, client, model_nam
             "action_nudge": "今日もできることから一つずつ、軽やかに楽しんでいきましょうね！"
         }
 
-def render_monthly_calendar_html(tracker_data, year, month, selected_date, today):
-    """指定年月のカレンダーをHTMLグリッドで描画"""
+def render_monthly_calendar_html(tracker_data, year, month, selected_date, today, is_embed=False):
+    """指定年月のカレンダーをHTMLグリッドで描画（各マスをタップしてその日の入力画面へ直接ジャンプ可能）"""
     cal = calendar.Calendar(firstweekday=6)  # 日曜始まり
     month_matrix = cal.monthdatescalendar(year, month)
 
     html_parts = []
+    html_parts.append('''
+    <style>
+    .cal-day-cell {
+        transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+    }
+    .cal-day-cell:hover {
+        transform: translateY(-2px);
+        border-color: #F59E0B !important;
+        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.4) !important;
+    }
+    </style>
+    ''')
     html_parts.append('<div style="background-color: #0F172A; border: 1px solid #334155; border-radius: 12px; padding: 14px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">')
+
+    # タップガイド
+    html_parts.append('''
+    <div style="font-size: 0.8rem; color: #94A3B8; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+        <span>💡 <b>日付マスをタップ</b> すると、その日の入力・確認画面へ直接ジャンプできます</span>
+        <span style="font-size: 0.75rem; color: #F59E0B;">※黄枠 = 現在選択中の日</span>
+    </div>
+    ''')
 
     # 曜日ヘッダー
     week_headers = [
@@ -654,17 +674,23 @@ def render_monthly_calendar_html(tracker_data, year, month, selected_date, today
                 escaped_note = note.replace('"', '&quot;')
                 sub_info.append(f'<div style="color: #94A3B8; font-size: 0.66rem; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{escaped_note}">📝 {escaped_note[:7]}</div>')
 
+            link_target = f"?target_habit_date={d_str}"
+            if is_embed:
+                link_target += "&embed=true"
+
             html_parts.append(f'''
-            <div style="{cell_style} border-radius: 8px; padding: 6px 7px; min-height: 82px; display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px;">
-                        <span style="color: {date_num_color}; font-weight: 700; font-size: 0.88rem;">{d.day}</span>
-                        <div>{top_tag}</div>
+            <a href="{link_target}" target="_self" style="text-decoration: none; color: inherit; display: block; height: 100%;">
+                <div class="cal-day-cell" style="{cell_style} border-radius: 8px; padding: 6px 7px; min-height: 82px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer;">
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px;">
+                            <span style="color: {date_num_color}; font-weight: 700; font-size: 0.88rem;">{d.day}</span>
+                            <div>{top_tag}</div>
+                        </div>
+                        <div>{badge_html}</div>
                     </div>
-                    <div>{badge_html}</div>
+                    <div>{"".join(sub_info)}</div>
                 </div>
-                <div>{"".join(sub_info)}</div>
-            </div>
+            </a>
             ''')
 
     html_parts.append('</div>')
@@ -683,8 +709,7 @@ def render_monthly_calendar_html(tracker_data, year, month, selected_date, today
 
     html_parts.append('</div>')
     raw_html = "".join(html_parts)
-    clean_html = "".join(line.strip() for line in raw_html.splitlines())
-    return clean_html
+    return "".join(line.strip() for line in raw_html.splitlines())
 
 def load_stocks_config(force_sync=False):
     """stock-monitorのCSVが存在すればそこから最新読み込み＆stocks_config.jsonへ自動同期、無ければstocks_config.jsonから読み込む"""
@@ -2493,52 +2518,70 @@ with tab7:
     adhoc_tasks = tk_data.get("adhocTasks", [])
 
     today = datetime.date.today()
-    if "in_habit_date" not in st.session_state:
-        st.session_state["in_habit_date"] = today
+
+    # カレンダーの日付タップ（URLクエリパラメータ target_habit_date）のハンドリング
+    if "target_habit_date" in st.query_params:
+        try:
+            t_str = st.query_params.get("target_habit_date")
+            if t_str:
+                t_date = datetime.datetime.strptime(t_str, "%Y-%m-%d").date()
+                st.session_state["habit_date_val"] = t_date
+                st.session_state["cal_view_year"] = t_date.year
+                st.session_state["cal_view_month"] = t_date.month
+                del st.query_params["target_habit_date"]
+        except Exception:
+            pass
+
+    if "habit_date_val" not in st.session_state:
+        st.session_state["habit_date_val"] = st.session_state.get("in_habit_date", today)
     if "cal_view_year" not in st.session_state:
-        st.session_state["cal_view_year"] = today.year
+        st.session_state["cal_view_year"] = st.session_state["habit_date_val"].year
     if "cal_view_month" not in st.session_state:
+        st.session_state["cal_view_month"] = st.session_state["habit_date_val"].month
+
+    # -------------------------------------------------------------------------
+    # コールバック関数（前日・翌日・今日・日付ピッカーの確実な同期）
+    # -------------------------------------------------------------------------
+    def _change_habit_date(delta_days: int):
+        cur = st.session_state.get("habit_date_val", today)
+        new_date = cur + datetime.timedelta(days=delta_days)
+        st.session_state["habit_date_val"] = new_date
+        st.session_state["cal_view_year"] = new_date.year
+        st.session_state["cal_view_month"] = new_date.month
+
+    def _set_today_habit_date():
+        st.session_state["habit_date_val"] = today
+        st.session_state["cal_view_year"] = today.year
         st.session_state["cal_view_month"] = today.month
+
+    def _on_date_picker_change():
+        picked = st.session_state.get("habit_date_val")
+        if picked:
+            st.session_state["cal_view_year"] = picked.year
+            st.session_state["cal_view_month"] = picked.month
 
     # -------------------------------------------------------------------------
     # 1. 最上部: 日付ナビゲーションバー（コンパクト & 即入力可能）
     # -------------------------------------------------------------------------
     d_col1, d_col2, d_col3, d_col4, d_col5 = st.columns([1, 1, 1.2, 2.2, 1.2])
     with d_col1:
-        if st.button("◀ 前日", key="btn_prev_date", use_container_width=True):
-            st.session_state["in_habit_date"] -= datetime.timedelta(days=1)
-            st.session_state["cal_view_year"] = st.session_state["in_habit_date"].year
-            st.session_state["cal_view_month"] = st.session_state["in_habit_date"].month
-            st.rerun()
+        st.button("◀ 前日", key="btn_prev_date", use_container_width=True, on_click=_change_habit_date, args=(-1,))
     with d_col2:
-        if st.button("翌日 ▶", key="btn_next_date", use_container_width=True):
-            st.session_state["in_habit_date"] += datetime.timedelta(days=1)
-            st.session_state["cal_view_year"] = st.session_state["in_habit_date"].year
-            st.session_state["cal_view_month"] = st.session_state["in_habit_date"].month
-            st.rerun()
+        st.button("翌日 ▶", key="btn_next_date", use_container_width=True, on_click=_change_habit_date, args=(1,))
     with d_col3:
-        if st.button("📅 今日", key="btn_today_date", use_container_width=True):
-            st.session_state["in_habit_date"] = today
-            st.session_state["cal_view_year"] = today.year
-            st.session_state["cal_view_month"] = today.month
-            st.rerun()
+        st.button("📅 今日", key="btn_today_date", use_container_width=True, on_click=_set_today_habit_date)
     with d_col4:
-        new_d = st.date_input(
+        st.date_input(
             "対象日を選択",
-            value=st.session_state["in_habit_date"],
-            key="in_habit_date_picker",
+            key="habit_date_val",
+            on_change=_on_date_picker_change,
             label_visibility="collapsed"
         )
-        if new_d != st.session_state["in_habit_date"]:
-            st.session_state["in_habit_date"] = new_d
-            st.session_state["cal_view_year"] = new_d.year
-            st.session_state["cal_view_month"] = new_d.month
-            st.rerun()
     with d_col5:
         if st.button("🔄 更新", key="btn_sync_taskkanri", use_container_width=True, help="最新データを再読み込み"):
             st.rerun()
 
-    sel_date = st.session_state["in_habit_date"]
+    sel_date = st.session_state["habit_date_val"]
     sel_date_str = sel_date.strftime("%Y-%m-%d")
     is_today = (sel_date == today)
 
@@ -2926,10 +2969,43 @@ with tab7:
                     st.session_state["habit_ai_cheer"] = None
                     st.rerun()
 
-        # カレンダー描画
-        cur_target_date = st.session_state["in_habit_date"]
-        cal_html = render_monthly_calendar_html(tracker_data, cal_year, cal_month, cur_target_date, today)
+        # カレンダー描画（各マス目をタップすると直接その日の実績画面へジャンプ可能）
+        cur_target_date = st.session_state["habit_date_val"]
+        is_embed = (st.query_params.get("embed") == "true") or ("embed" in st.query_params)
+        cal_html = render_monthly_calendar_html(tracker_data, cal_year, cal_month, cur_target_date, today, is_embed=is_embed)
         st.markdown(cal_html, unsafe_allow_html=True)
+
+        # カレンダー下の日付ジャンプセレクター（タップでもドロップダウンでも確実にジャンプ可能）
+        month_days_cnt = calendar.monthrange(cal_year, cal_month)[1]
+        days_in_month = [datetime.date(cal_year, cal_month, d_i) for d_i in range(1, month_days_cnt + 1)]
+        cur_in_month = cur_target_date if (cur_target_date.year == cal_year and cur_target_date.month == cal_month) else days_in_month[0]
+
+        def _on_cal_jump():
+            picked_day = st.session_state.get("sel_jump_day")
+            if picked_day:
+                st.session_state["habit_date_val"] = picked_day
+                st.session_state["cal_view_year"] = picked_day.year
+                st.session_state["cal_view_month"] = picked_day.month
+
+        col_j1, col_j2 = st.columns([3, 1.5])
+        with col_j1:
+            st.selectbox(
+                f"📅 {cal_year}年{cal_month}月 の日付を選んで直接開く",
+                options=days_in_month,
+                index=days_in_month.index(cur_in_month) if cur_in_month in days_in_month else 0,
+                format_func=lambda d: f"{d.strftime('%m月%d日')} ({weekday_names[d.weekday()]})" + (
+                    " 👑 パーフェクト" if sum(1 for h in HABITS_LIST if tracker_data.get(d.strftime('%Y-%m-%d'), {}).get(h, False)) == len(HABITS_LIST)
+                    else (f" ({sum(1 for h in HABITS_LIST if tracker_data.get(d.strftime('%Y-%m-%d'), {}).get(h, False))}/{len(HABITS_LIST)}項目)" if tracker_data.get(d.strftime('%Y-%m-%d')) else " (未記録)")
+                ),
+                key="sel_jump_day",
+                on_change=_on_cal_jump,
+                help="選んだ日付の実績入力・確認画面に即座に切り替わります"
+            )
+        with col_j2:
+            st.markdown("<div style='margin-top: 26px;'></div>", unsafe_allow_html=True)
+            if st.button("この日を開く", key="btn_confirm_jump", use_container_width=True):
+                _on_cal_jump()
+                st.rerun()
 
     # -------------------------------------------------------------------------
     # 4. 折りたたみ: 過去データの移行 / バックアップ

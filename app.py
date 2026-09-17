@@ -149,10 +149,46 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# -----------------------------------------------------------------------------
-# 利用モデルの定義
-# -----------------------------------------------------------------------------
 MODEL_NAME = "gemini-2.5-flash"
+FALLBACK_MODELS = ["gemini-2.0-flash", "gemini-1.5-flash"]
+
+def safe_generate_content(client, contents, config=None, model=MODEL_NAME, max_retries=3):
+    """
+    503 UNAVAILABLE (一時的な過負荷) や 429 (レート制限) に対応し、
+    指数バックオフ待機と代替モデル（フォールバック）で自動再試行する安全な生成関数
+    """
+    models_to_try = [model] + [m for m in FALLBACK_MODELS if m != model]
+    last_error = None
+
+    for m in models_to_try:
+        for attempt in range(max_retries):
+            try:
+                if config:
+                    response = client.models.generate_content(model=m, contents=contents, config=config)
+                else:
+                    response = client.models.generate_content(model=m, contents=contents)
+                if response and response.text:
+                    return response
+            except Exception as e:
+                last_error = e
+                err_str = str(e)
+                # 503 (過負荷) または 429 (一時的混雑) の場合は待機してリトライ
+                if any(code in err_str for code in ["503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED"]):
+                    wait_sec = 2 * (attempt + 1)
+                    time.sleep(wait_sec)
+                else:
+                    # その他の致命的エラー（構文エラーや引数不正など）は即中断して次のモデルへ
+                    break
+
+    if last_error:
+        err_str = str(last_error)
+        if "503" in err_str or "UNAVAILABLE" in err_str:
+            raise Exception("GoogleのAIサーバーで一時的なアクセス集中（503過負荷）が発生しています。需要の波が収まるまで1〜2分ほどお待ちいただき、再度お試しください。")
+        elif "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+            raise Exception("一時的なリクエスト集中によりAPI制限に達しました。1〜2分ほど時間を置いてお試しください。")
+        raise last_error
+
+    raise Exception("AIの応答を取得できませんでした。")
 
 # -----------------------------------------------------------------------------
 # パスワード認証（SecretsにAPP_PASSWORDが設定されている場合にアクセス制限）
@@ -559,14 +595,15 @@ def generate_habit_motivation_cheer(tracker_data, adhoc_tasks, client, model_nam
     }}
     """
     try:
-        response = client.models.generate_content(
-            model=model_name,
+        response = safe_generate_content(
+            client=client,
             contents=prompt,
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.75,
                 system_instruction=custom_instruction if custom_instruction else None,
             ),
+            model=model_name,
         )
         return json.loads(response.text)
     except Exception as e:
@@ -1016,14 +1053,15 @@ with tab1:
                 """
                 try:
                     custom_instruction_text = get_custom_instructions()
-                    response = client.models.generate_content(
-                        model=MODEL_NAME,
+                    response = safe_generate_content(
+                        client=client,
                         contents=prompt,
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json",
                             temperature=0.7,
                             system_instruction=custom_instruction_text if custom_instruction_text else None,
                         ),
+                        model=MODEL_NAME,
                     )
                     parsed_json = json.loads(response.text)
                     st.session_state["briefing_data"] = parsed_json
@@ -1244,23 +1282,12 @@ Google検索ツールを活用し、以下の対象銘柄に関する【直近�
                         system_instruction=custom_instruction_text if custom_instruction_text else None,
                     )
                     
-                    response = None
-                    last_error = None
-                    for attempt in range(3):
-                        try:
-                            response = client.models.generate_content(
-                                model=MODEL_NAME,
-                                contents=prompt,
-                                config=config,
-                            )
-                            if response and response.text:
-                                break
-                        except Exception as e:
-                            last_error = e
-                            time.sleep(2)
-                    
-                    if not response or not response.text:
-                        raise last_error or Exception("ニュース情報の取得に失敗しました。")
+                    response = safe_generate_content(
+                        client=client,
+                        contents=prompt,
+                        config=config,
+                        model=MODEL_NAME,
+                    )
 
                     # 元記事リンクの抽出（グラウンディングメタデータからバックアップ取得）
                     grounding_sources = []
@@ -1600,23 +1627,12 @@ Google検索ツールを活用し、2026年直近の最新市場データ、適�
                         system_instruction=custom_instruction_text if custom_instruction_text else None,
                     )
                     
-                    response = None
-                    last_error = None
-                    for attempt in range(3):
-                        try:
-                            response = client.models.generate_content(
-                                model=MODEL_NAME,
-                                contents=prompt,
-                                config=config,
-                            )
-                            if response and response.text:
-                                break
-                        except Exception as e:
-                            last_error = e
-                            time.sleep(2)
-
-                    if not response or not response.text:
-                        raise last_error or Exception("銘柄情報のスクリーニングに失敗しました。")
+                    response = safe_generate_content(
+                        client=client,
+                        contents=prompt,
+                        config=config,
+                        model=MODEL_NAME,
+                    )
 
                     # 元記事リンクの抽出
                     grounding_sources = []
@@ -2133,23 +2149,12 @@ with tab4:
                         system_instruction=custom_instruction_text if custom_instruction_text else None,
                     )
                     
-                    response = None
-                    last_error = None
-                    for attempt in range(3):
-                        try:
-                            response = client.models.generate_content(
-                                model=MODEL_NAME,
-                                contents=prompt,
-                                config=config,
-                            )
-                            if response and response.text:
-                                break
-                        except Exception as e:
-                            last_error = e
-                            time.sleep(2)
-
-                    if not response or not response.text:
-                        raise last_error or Exception("ポートフォリオ診断に失敗しました。")
+                    response = safe_generate_content(
+                        client=client,
+                        contents=prompt,
+                        config=config,
+                        model=MODEL_NAME,
+                    )
 
                     st.session_state["portfolio_diagnosis_results"] = response.text
                     st.session_state["portfolio_diagnosis_last_updated"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -2256,14 +2261,15 @@ with tab5:
                 """
                 try:
                     custom_instruction_text = get_custom_instructions()
-                    response = client.models.generate_content(
-                        model=MODEL_NAME,
+                    response = safe_generate_content(
+                        client=client,
                         contents=prompt,
                         config=types.GenerateContentConfig(
                             response_mime_type="application/json",
                             temperature=0.8,
                             system_instruction=custom_instruction_text if custom_instruction_text else None,
                         ),
+                        model=MODEL_NAME,
                     )
                     st.session_state["brainstorm_result"] = json.loads(response.text)
                 except Exception as e:
@@ -2485,14 +2491,15 @@ with tab6:
                     """
                     custom_instruction_text = get_custom_instructions()
                     try:
-                        response = client.models.generate_content(
-                            model=MODEL_NAME,
+                        response = safe_generate_content(
+                            client=client,
                             contents=prompt,
                             config=types.GenerateContentConfig(
                                 response_mime_type="application/json",
                                 temperature=0.7,
                                 system_instruction=custom_instruction_text if custom_instruction_text else None,
                             ),
+                            model=MODEL_NAME,
                         )
                         new_advice = json.loads(response.text)
                         st.session_state["task_advice"] = new_advice

@@ -2492,92 +2492,6 @@ with tab7:
     tracker_data = tk_data.get("trackerData", {})
     adhoc_tasks = tk_data.get("adhocTasks", [])
 
-    # ヘッダー
-    t7_h1, t7_h2 = st.columns([3, 1.5])
-    with t7_h1:
-        st.markdown(
-            """
-            <div style="font-size: 1.15rem; font-weight: 700; color: #F8FAFC; margin-bottom: 2px;">
-                🏃 毎日の習慣・健康記録 & 個別タスク
-            </div>
-            <div style="font-size: 0.8rem; color: #94A3B8; margin-bottom: 10px;">
-                日課の達成記録・血圧・ゴルフ球数・個別ToDoを全端末で一元管理（過去データ完全保持）
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with t7_h2:
-        if st.button("🔄 最新データを再読込", key="btn_sync_taskkanri", use_container_width=True):
-            st.rerun()
-
-    # データ移行・インポート / エクスポート用 Expander
-    with st.expander("📥 過去データの移行（JSON貼り付け）/ 💾 バックアップ"):
-        st.markdown(
-            """
-            <div style="font-size: 0.88rem; color: #CBD5E1; margin-bottom: 8px;">
-                <b>過去の記録を引き継ぐ方法:</b><br>
-                以前のタスク管理アプリ（<code>taskkanri</code>）で「💾 データをバックアップ」からダウンロードしたJSONファイルの内容、またはFirebase FirestoreからコピーしたJSONテキストを、下の枠にそのまま貼り付けて「インポート実行」ボタンを押してください。<br>
-                過去の日課実績・血圧・メモ・タスクがすべて復元され、安全に保管されます。
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        import_text = st.text_area("JSONデータを貼り付け", height=120, placeholder='{"trackerData": {...}, "adhocTasks": [...]} または Firestoreのデータ', key="ta_import_json")
-        btn_col_imp1, btn_col_imp2 = st.columns([1.5, 2.5])
-        with btn_col_imp1:
-            if st.button("📥 インポート実行", key="btn_do_import", use_container_width=True):
-                if import_text.strip():
-                    try:
-                        parsed = json.loads(import_text.strip())
-                        imported_tracker = {}
-                        imported_tasks = []
-
-                        if isinstance(parsed, dict):
-                            if "trackerData" in parsed and isinstance(parsed["trackerData"], dict):
-                                imported_tracker = parsed["trackerData"]
-                            else:
-                                if any(isinstance(v, (dict, bool)) for v in parsed.values()):
-                                    imported_tracker = parsed
-
-                            if "adhocTasks" in parsed and isinstance(parsed["adhocTasks"], list):
-                                imported_tasks = parsed["adhocTasks"]
-                        
-                        merged_tracker = {**tracker_data, **imported_tracker}
-                        existing_ids = {t.get("id") for t in adhoc_tasks}
-                        merged_tasks = list(adhoc_tasks)
-                        for t in imported_tasks:
-                            if t.get("id") not in existing_ids:
-                                merged_tasks.append(t)
-                                existing_ids.add(t.get("id"))
-                            else:
-                                for idx, et in enumerate(merged_tasks):
-                                    if et.get("id") == t.get("id"):
-                                        merged_tasks[idx] = t
-
-                        tk_data["trackerData"] = merged_tracker
-                        tk_data["adhocTasks"] = merged_tasks
-                        save_taskkanri_data(tk_data)
-                        st.success(f"✅ インポート成功！日課記録 {len(merged_tracker)} 日分、個別タスク {len(merged_tasks)} 件を保存・復元しました。")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"JSONの解析に失敗しました: {e}")
-                else:
-                    st.warning("JSONテキストを入力してください。")
-        with btn_col_imp2:
-            current_json_str = json.dumps(tk_data, ensure_ascii=False, indent=2)
-            today_str = datetime.date.today().strftime("%Y-%m-%d")
-            st.download_button(
-                label="💾 現在の全データをJSONダウンロード（バックアップ）",
-                data=current_json_str,
-                file_name=f"habit-tracker-backup-{today_str}.json",
-                mime="application/json",
-                use_container_width=True,
-                key="btn_dl_backup"
-            )
-
-    # -------------------------------------------------------------------------
-    # 1. 月間カレンダー & 頑張りサマリー
-    # -------------------------------------------------------------------------
     today = datetime.date.today()
     if "in_habit_date" not in st.session_state:
         st.session_state["in_habit_date"] = today
@@ -2586,165 +2500,24 @@ with tab7:
     if "cal_view_month" not in st.session_state:
         st.session_state["cal_view_month"] = today.month
 
-    cal_year = st.session_state["cal_view_year"]
-    cal_month = st.session_state["cal_view_month"]
-
-    # 年月切り替えバー
-    cal_nav1, cal_nav2, cal_nav3, cal_nav4 = st.columns([1.2, 2.5, 1.2, 1.5])
-    with cal_nav1:
-        if st.button("◀ 前月", key="btn_cal_prev_month", use_container_width=True):
-            if cal_month == 1:
-                st.session_state["cal_view_year"] -= 1
-                st.session_state["cal_view_month"] = 12
-            else:
-                st.session_state["cal_view_month"] -= 1
-            st.rerun()
-    with cal_nav2:
-        is_this_month = (cal_year == today.year and cal_month == today.month)
-        st.markdown(
-            f"""
-            <div style="text-align: center; font-size: 1.15rem; font-weight: 700; color: #F8FAFC; padding-top: 4px;">
-                📅 {cal_year}年 {cal_month}月 の実績カレンダー
-                {"<span style='background: #3B82F6; color: white; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;'>当月</span>" if is_this_month else ""}
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with cal_nav3:
-        if st.button("翌月 ▶", key="btn_cal_next_month", use_container_width=True):
-            if cal_month == 12:
-                st.session_state["cal_view_year"] += 1
-                st.session_state["cal_view_month"] = 1
-            else:
-                st.session_state["cal_view_month"] += 1
-            st.rerun()
-    with cal_nav4:
-        if st.button("今月に戻る", key="btn_cal_reset_month", use_container_width=True):
-            st.session_state["cal_view_year"] = today.year
-            st.session_state["cal_view_month"] = today.month
-            st.rerun()
-
-    # 今月の頑張りサマリーカード
-    m_summary = get_monthly_habit_summary(tracker_data, cal_year, cal_month)
-    bp_text = f"{m_summary['avg_sys']}/{m_summary['avg_dia']} mmHg" if m_summary['avg_sys'] else "未記録"
-    golf_text = f"{m_summary['golf_days']}回 ({m_summary['golf_balls']}球)" if m_summary['golf_days'] > 0 else "なし"
-
-    summary_card_raw = f"""
-        <div style="background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border: 1px solid #4338CA; border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(67, 56, 202, 0.25);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <div style="font-size: 1.05rem; font-weight: 700; color: #E0E7FF; display: flex; align-items: center; gap: 8px;">
-                    <span>🏆 {cal_year}年{cal_month}月 の頑張りサマリー</span>
-                </div>
-                <div style="font-size: 0.8rem; color: #A5B4FC; font-weight: 600;">
-                    記録日数: <b style="color: #F8FAFC; font-size: 0.95rem;">{m_summary['days_recorded']}</b> / {m_summary['last_day']} 日
-                </div>
-            </div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 8px;">
-                <div>
-                    <div style="font-size: 0.75rem; color: #94A3B8;">日課クリア総数</div>
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #34D399;">{m_summary['total_clears']} <span style="font-size: 0.8rem; font-weight: 400; color: #CBD5E1;">回</span></div>
-                </div>
-                <div>
-                    <div style="font-size: 0.75rem; color: #94A3B8;">パーフェクト達成 (8/8)</div>
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #FBBF24;">👑 {m_summary['perfect_days']} <span style="font-size: 0.8rem; font-weight: 400; color: #CBD5E1;">日</span></div>
-                </div>
-                <div>
-                    <div style="font-size: 0.75rem; color: #94A3B8;">血圧測定 & 平均値</div>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #F87171; margin-top: 2px;">{bp_text} <span style="font-size: 0.75rem; font-weight: 400; color: #94A3B8;">({m_summary['bp_count']}日)</span></div>
-                </div>
-                <div>
-                    <div style="font-size: 0.75rem; color: #94A3B8;">ゴルフ打ちっぱなし</div>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #C4B5FD; margin-top: 2px;">🏌️ {golf_text}</div>
-                </div>
-            </div>
-            <div style="font-size: 0.85rem; color: #FDE047; line-height: 1.4; display: flex; align-items: center; gap: 6px;">
-                <span>💬 <b>{m_summary['message']}</b></span>
-            </div>
-        </div>
-        """
-    clean_summary_html = "".join(line.strip() for line in summary_card_raw.splitlines())
-    st.markdown(clean_summary_html, unsafe_allow_html=True)
-
     # -------------------------------------------------------------------------
-    # AI称賛 & やる気チャージ（モチベーションエール）機能
+    # 1. 最上部: 日付ナビゲーションバー（コンパクト & 即入力可能）
     # -------------------------------------------------------------------------
-    col_cheer_btn, col_cheer_desc = st.columns([1.8, 3.2])
-    with col_cheer_btn:
-        btn_get_cheer = st.button("🔥 実績を称えてやる気を出す！（AIエール）", key="btn_habit_ai_cheer", use_container_width=True)
-    with col_cheer_desc:
-        st.caption("これまでの通算記録や今月のクリア実績を深く分析し、あなたの努力を大絶賛してやる気をチャージします！")
-
-    if btn_get_cheer:
-        if not client:
-            st.error("Gemini APIキーが設定されていません。サイドバーから設定してください。")
-        else:
-            with st.spinner("AIがあなたの努力と実績を読み解き、熱いエールを準備中...🔥"):
-                custom_inst = get_custom_instructions()
-                cheer_res = generate_habit_motivation_cheer(tracker_data, adhoc_tasks, client, MODEL_NAME, custom_inst)
-                st.session_state["habit_ai_cheer"] = cheer_res
-                st.rerun()
-
-    if st.session_state.get("habit_ai_cheer"):
-        cheer = st.session_state["habit_ai_cheer"]
-        cheer_card_raw = f"""
-        <div style="background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 16px 20px; margin-top: 6px; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <div style="font-size: 1.12rem; font-weight: 800; color: #FBBF24; display: flex; align-items: center; gap: 8px;">
-                    <span>🌟 {cheer.get('title', 'あなたの努力を全力称賛！')}</span>
-                </div>
-            </div>
-            <div style="margin-bottom: 12px;">
-                <div style="font-size: 0.82rem; font-weight: 700; color: #34D399; margin-bottom: 4px;">👏 これまでの努力を心から高評価</div>
-                <div style="font-size: 0.93rem; color: #F8FAFC; line-height: 1.6; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #34D399;">
-                    {cheer.get('praise', '')}
-                </div>
-            </div>
-            <div style="margin-bottom: 10px;">
-                <div style="font-size: 0.82rem; font-weight: 700; color: #F472B6; margin-bottom: 4px;">🚀 やる気チャージ＆力強いエール</div>
-                <div style="font-size: 0.93rem; color: #FEF08A; line-height: 1.6; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #F472B6; font-weight: 500;">
-                    {cheer.get('motivation', '')}
-                </div>
-            </div>
-            <div style="font-size: 0.85rem; color: #93C5FD; display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.1);">
-                <span>💡 <b>今日のアクション:</b> {cheer.get('action_nudge', '')}</span>
-            </div>
-        </div>
-        """
-        clean_cheer_html = "".join(line.strip() for line in cheer_card_raw.splitlines())
-        st.markdown(clean_cheer_html, unsafe_allow_html=True)
-        col_c_close1, col_c_close2 = st.columns([1.5, 4])
-        with col_c_close1:
-            if st.button("✕ エールを閉じる", key="btn_close_cheer", use_container_width=True):
-                st.session_state["habit_ai_cheer"] = None
-                st.rerun()
-
-    # カレンダーの描画（現在選択中の編集日 sel_date を渡す）
-    cur_target_date = st.session_state["in_habit_date"]
-    cal_html = render_monthly_calendar_html(tracker_data, cal_year, cal_month, cur_target_date, today)
-    st.markdown(cal_html, unsafe_allow_html=True)
-
-    # -------------------------------------------------------------------------
-    # 2. 実績の入力・確認（日付ナビゲーション & チェックリスト）
-    # -------------------------------------------------------------------------
-    st.markdown("<div style='margin-top: 14px; margin-bottom: 8px; font-weight: 700; font-size: 1.05rem; color: #EEF2FF;'>📝 実績の入力・記録</div>", unsafe_allow_html=True)
-
-    d_col1, d_col2, d_col3, d_col4 = st.columns([1, 1, 1.8, 2.5])
+    d_col1, d_col2, d_col3, d_col4, d_col5 = st.columns([1, 1, 1.2, 2.2, 1.2])
     with d_col1:
         if st.button("◀ 前日", key="btn_prev_date", use_container_width=True):
             st.session_state["in_habit_date"] -= datetime.timedelta(days=1)
-            # 月が変わればカレンダーの表示月も連動
             st.session_state["cal_view_year"] = st.session_state["in_habit_date"].year
             st.session_state["cal_view_month"] = st.session_state["in_habit_date"].month
             st.rerun()
     with d_col2:
         if st.button("翌日 ▶", key="btn_next_date", use_container_width=True):
             st.session_state["in_habit_date"] += datetime.timedelta(days=1)
-            # 月が変わればカレンダーの表示月も連動
             st.session_state["cal_view_year"] = st.session_state["in_habit_date"].year
             st.session_state["cal_view_month"] = st.session_state["in_habit_date"].month
             st.rerun()
     with d_col3:
-        if st.button("📅 今日に戻る", key="btn_today_date", use_container_width=True):
+        if st.button("📅 今日", key="btn_today_date", use_container_width=True):
             st.session_state["in_habit_date"] = today
             st.session_state["cal_view_year"] = today.year
             st.session_state["cal_view_month"] = today.month
@@ -2752,12 +2525,17 @@ with tab7:
     with d_col4:
         new_d = st.date_input(
             "対象日を選択",
-            key="in_habit_date",
+            value=st.session_state["in_habit_date"],
+            key="in_habit_date_picker",
             label_visibility="collapsed"
         )
-        if new_d.year != st.session_state.get("cal_view_year") or new_d.month != st.session_state.get("cal_view_month"):
+        if new_d != st.session_state["in_habit_date"]:
+            st.session_state["in_habit_date"] = new_d
             st.session_state["cal_view_year"] = new_d.year
             st.session_state["cal_view_month"] = new_d.month
+            st.rerun()
+    with d_col5:
+        if st.button("🔄 更新", key="btn_sync_taskkanri", use_container_width=True, help="最新データを再読み込み"):
             st.rerun()
 
     sel_date = st.session_state["in_habit_date"]
@@ -2771,31 +2549,40 @@ with tab7:
     if not isinstance(day_record, dict):
         day_record = {}
 
+    done_count = sum(1 for h in HABITS_LIST if day_record.get(h, False))
+    total_habits = len(HABITS_LIST)
+    progress_rate = done_count / total_habits if total_habits > 0 else 0
+
+    # 質素で清潔なヘッダー
     st.markdown(
         f"""
-        <div style="font-size: 1.1rem; font-weight: 700; color: #EEF2FF; margin-top: 10px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-            <span>📅 {sel_date.strftime('%Y年%m月%d日')} ({weekday_label}) の実績</span>
-            {"<span class='category-badge badge-neutral' style='background: #4338CA; color: white;'>TODAY</span>" if is_today else "<span class='category-badge badge-neutral' style='background: #475569; color: #CBD5E1;'>過去記録</span>"}
+        <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 4px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #334155;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.12rem; font-weight: 700; color: #F8FAFC;">
+                    📅 {sel_date.strftime('%Y年%m月%d日')} ({weekday_label})
+                </span>
+                {"<span style='background: #3B82F6; color: white; font-size: 0.72rem; font-weight: 600; padding: 2px 6px; border-radius: 4px;'>今日</span>" if is_today else "<span style='background: #475569; color: #CBD5E1; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px;'>過去の記録</span>"}
+            </div>
+            <div style="font-size: 0.85rem; color: #94A3B8;">
+                達成: <b style="color: {'#34D399' if done_count == total_habits else '#F8FAFC'}; font-size: 1.05rem;">{done_count}</b> / {total_habits} 項目
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+    st.progress(progress_rate)
 
+    # -------------------------------------------------------------------------
+    # 2. 実績入力フォーム（最上位配置・質素で入力しやすいデザイン）
+    # -------------------------------------------------------------------------
     col_habits, col_adhoc = st.columns([1.15, 1.1], gap="large")
 
     # 左カラム：日課の達成チェック & 血圧 & ゴルフ & 備考
     with col_habits:
-        st.markdown("<div style='font-size: 1.05rem; font-weight: 700; color: #F1F5F9; margin-bottom: 8px;'>✅ 定常日課チェックリスト</div>", unsafe_allow_html=True)
-
-        done_count = sum(1 for h in HABITS_LIST if day_record.get(h, False))
-        total_habits = len(HABITS_LIST)
-        progress_rate = done_count / total_habits if total_habits > 0 else 0
-        st.progress(progress_rate, text=f"達成度: {done_count} / {total_habits} 項目 ({int(progress_rate * 100)}%)")
-
         with st.form(key=f"form_habits_{sel_date_str}"):
             updated_day = dict(day_record)
 
-            st.markdown("<div style='font-size: 0.95rem; font-weight: 700; color: #38BDF8; margin-top: 12px; margin-bottom: 6px;'>🏃 運動・健康カテゴリ</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #38BDF8; margin-top: 2px; margin-bottom: 4px;'>🏃 運動・健康</div>", unsafe_allow_html=True)
             for habit in HABIT_CATEGORIES["運動・健康"]:
                 val = day_record.get(habit, False)
                 checked = st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
@@ -2803,58 +2590,57 @@ with tab7:
 
                 if habit == "血圧測定":
                     if checked:
-                        bp_cols = st.columns([2, 2, 2])
+                        bp_cols = st.columns([2, 2, 1.5])
                         with bp_cols[0]:
                             cur_sys = day_record.get("bpSys", "")
-                            new_sys = st.number_input("最高血圧(上)", min_value=0, max_value=300, value=int(cur_sys) if cur_sys else 0, step=1, key=f"sys_{sel_date_str}", help="最高血圧（収縮期）")
+                            new_sys = st.number_input("最高 (上)", min_value=0, max_value=300, value=int(cur_sys) if cur_sys else 0, step=1, key=f"sys_{sel_date_str}")
                             if new_sys > 0:
                                 updated_day["bpSys"] = int(new_sys)
                             else:
                                 updated_day.pop("bpSys", None)
                         with bp_cols[1]:
                             cur_dia = day_record.get("bpDia", "")
-                            new_dia = st.number_input("最低血圧(下)", min_value=0, max_value=200, value=int(cur_dia) if cur_dia else 0, step=1, key=f"dia_{sel_date_str}", help="最低血圧（拡張期）")
+                            new_dia = st.number_input("最低 (下)", min_value=0, max_value=200, value=int(cur_dia) if cur_dia else 0, step=1, key=f"dia_{sel_date_str}")
                             if new_dia > 0:
                                 updated_day["bpDia"] = int(new_dia)
                             else:
                                 updated_day.pop("bpDia", None)
                         with bp_cols[2]:
-                            st.markdown("<div style='margin-top: 32px; font-size: 0.9rem; color: #94A3B8;'>mmHg</div>", unsafe_allow_html=True)
+                            st.markdown("<div style='margin-top: 30px; font-size: 0.8rem; color: #94A3B8;'>mmHg</div>", unsafe_allow_html=True)
                     else:
                         updated_day.pop("bpSys", None)
                         updated_day.pop("bpDia", None)
 
-            st.markdown("<div style='margin-top: 14px; font-size: 0.95rem; font-weight: 700; color: #F59E0B; margin-bottom: 6px;'>📝 記録・管理カテゴリ</div>", unsafe_allow_html=True)
+            st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #F59E0B; margin-top: 10px; margin-bottom: 4px;'>📝 記録・管理</div>", unsafe_allow_html=True)
             for habit in HABIT_CATEGORIES["記録・管理"]:
                 val = day_record.get(habit, False)
                 checked = st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
                 updated_day[habit] = checked
 
-            st.markdown("<div style='margin-top: 14px; padding-top: 10px; border-top: 1px dashed #334155;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-top: 10px; border-top: 1px dashed #334155;'></div>", unsafe_allow_html=True)
             golf_info = day_record.get("golf", {})
             if not isinstance(golf_info, dict):
                 golf_info = {}
-            golf_checked = st.checkbox("🏌️ ゴルフの打ちっぱなしに行った", value=bool(golf_info.get("practiced", False)), key=f"chk_golf_{sel_date_str}")
+            golf_checked = st.checkbox("🏌️ ゴルフ打ちっぱなし", value=bool(golf_info.get("practiced", False)), key=f"chk_golf_{sel_date_str}")
             if golf_checked:
                 cur_balls = golf_info.get("balls", 0)
-                new_balls = st.number_input("打った球数（球）", min_value=0, max_value=999, value=int(cur_balls) if cur_balls else 50, step=10, key=f"num_golf_balls_{sel_date_str}")
+                new_balls = st.number_input("球数（球）", min_value=0, max_value=999, value=int(cur_balls) if cur_balls else 50, step=10, key=f"num_golf_balls_{sel_date_str}")
                 updated_day["golf"] = {"practiced": True, "balls": int(new_balls)}
             else:
                 updated_day["golf"] = {"practiced": False, "balls": 0}
 
-            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             cur_note = day_record.get("note", "")
-            new_note = st.text_input("📝 備考 (未消化の理由など・最大20文字)", value=str(cur_note) if cur_note else "", max_chars=20, key=f"txt_note_{sel_date_str}", placeholder="例: 疲労のためスクワット休み")
+            new_note = st.text_input("備考メモ (未消化理由など)", value=str(cur_note) if cur_note else "", max_chars=30, key=f"txt_note_{sel_date_str}", placeholder="例: 疲労のためスクワット休み")
             updated_day["note"] = new_note.strip()
 
-            st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
             save_habit_btn = st.form_submit_button("💾 実績を保存する", use_container_width=True)
 
             if save_habit_btn:
                 tracker_data[sel_date_str] = updated_day
                 tk_data["trackerData"] = tracker_data
                 save_taskkanri_data(tk_data)
-                st.success(f"{sel_date_str} の実績を保存しました！")
+                st.success(f"✅ {sel_date_str} の実績を保存しました！")
                 st.rerun()
 
     # 右カラム：個別タスク（ToDo）& 習慣ストリーク
@@ -3004,3 +2790,210 @@ with tab7:
                     """,
                     unsafe_allow_html=True
                 )
+
+    # -------------------------------------------------------------------------
+    # 3. 折りたたみ: 月間実績カレンダー ＆ 今月の頑張りサマリー・AIやる気エール
+    # -------------------------------------------------------------------------
+    st.markdown("<div style='margin-top: 20px;'></div>", unsafe_allow_html=True)
+    with st.expander("🏆 月間実績カレンダー ＆ 今月の頑張りサマリー・AIやる気エール", expanded=False):
+        cal_year = st.session_state["cal_view_year"]
+        cal_month = st.session_state["cal_view_month"]
+
+        # 年月切り替えバー
+        cal_nav1, cal_nav2, cal_nav3, cal_nav4 = st.columns([1.2, 2.5, 1.2, 1.5])
+        with cal_nav1:
+            if st.button("◀ 前月", key="btn_cal_prev_month", use_container_width=True):
+                if cal_month == 1:
+                    st.session_state["cal_view_year"] -= 1
+                    st.session_state["cal_view_month"] = 12
+                else:
+                    st.session_state["cal_view_month"] -= 1
+                st.rerun()
+        with cal_nav2:
+            is_this_month = (cal_year == today.year and cal_month == today.month)
+            st.markdown(
+                f"""
+                <div style="text-align: center; font-size: 1.15rem; font-weight: 700; color: #F8FAFC; padding-top: 4px;">
+                    📅 {cal_year}年 {cal_month}月 の実績カレンダー
+                    {"<span style='background: #3B82F6; color: white; font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px;'>当月</span>" if is_this_month else ""}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        with cal_nav3:
+            if st.button("翌月 ▶", key="btn_cal_next_month", use_container_width=True):
+                if cal_month == 12:
+                    st.session_state["cal_view_year"] += 1
+                    st.session_state["cal_view_month"] = 1
+                else:
+                    st.session_state["cal_view_month"] += 1
+                st.rerun()
+        with cal_nav4:
+            if st.button("今月に戻る", key="btn_cal_reset_month", use_container_width=True):
+                st.session_state["cal_view_year"] = today.year
+                st.session_state["cal_view_month"] = today.month
+                st.rerun()
+
+        # 今月の頑張りサマリーカード
+        m_summary = get_monthly_habit_summary(tracker_data, cal_year, cal_month)
+        bp_text = f"{m_summary['avg_sys']}/{m_summary['avg_dia']} mmHg" if m_summary['avg_sys'] else "未記録"
+        golf_text = f"{m_summary['golf_days']}回 ({m_summary['golf_balls']}球)" if m_summary['golf_days'] > 0 else "なし"
+
+        summary_card_raw = f"""
+            <div style="background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%); border: 1px solid #4338CA; border-radius: 12px; padding: 14px 18px; margin-top: 10px; margin-bottom: 14px; box-shadow: 0 4px 15px rgba(67, 56, 202, 0.25);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div style="font-size: 1.05rem; font-weight: 700; color: #E0E7FF; display: flex; align-items: center; gap: 8px;">
+                        <span>🏆 {cal_year}年{cal_month}月 の頑張りサマリー</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: #A5B4FC; font-weight: 600;">
+                        記録日数: <b style="color: #F8FAFC; font-size: 0.95rem;">{m_summary['days_recorded']}</b> / {m_summary['last_day']} 日
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 8px;">
+                    <div>
+                        <div style="font-size: 0.75rem; color: #94A3B8;">日課クリア総数</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #34D399;">{m_summary['total_clears']} <span style="font-size: 0.8rem; font-weight: 400; color: #CBD5E1;">回</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #94A3B8;">パーフェクト達成 (8/8)</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #FBBF24;">👑 {m_summary['perfect_days']} <span style="font-size: 0.8rem; font-weight: 400; color: #CBD5E1;">日</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #94A3B8;">血圧測定 & 平均値</div>
+                        <div style="font-size: 1.05rem; font-weight: 700; color: #F87171; margin-top: 2px;">{bp_text} <span style="font-size: 0.75rem; font-weight: 400; color: #94A3B8;">({m_summary['bp_count']}日)</span></div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: #94A3B8;">ゴルフ打ちっぱなし</div>
+                        <div style="font-size: 1.05rem; font-weight: 700; color: #C4B5FD; margin-top: 2px;">🏌️ {golf_text}</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.85rem; color: #FDE047; line-height: 1.4; display: flex; align-items: center; gap: 6px;">
+                    <span>💬 <b>{m_summary['message']}</b></span>
+                </div>
+            </div>
+            """
+        clean_summary_html = "".join(line.strip() for line in summary_card_raw.splitlines())
+        st.markdown(clean_summary_html, unsafe_allow_html=True)
+
+        # AI称賛 & やる気チャージ（モチベーションエール）機能
+        col_cheer_btn, col_cheer_desc = st.columns([1.8, 3.2])
+        with col_cheer_btn:
+            btn_get_cheer = st.button("🔥 実績を称えてやる気を出す！（AIエール）", key="btn_habit_ai_cheer", use_container_width=True)
+        with col_cheer_desc:
+            st.caption("これまでの通算記録や今月のクリア実績を深く分析し、あなたの努力を大絶賛してやる気をチャージします！")
+
+        if btn_get_cheer:
+            if not client:
+                st.error("Gemini APIキーが設定されていません。サイドバーから設定してください。")
+            else:
+                with st.spinner("AIがあなたの努力と実績を読み解き、熱いエールを準備中...🔥"):
+                    custom_inst = get_custom_instructions()
+                    cheer_res = generate_habit_motivation_cheer(tracker_data, adhoc_tasks, client, MODEL_NAME, custom_inst)
+                    st.session_state["habit_ai_cheer"] = cheer_res
+                    st.rerun()
+
+        if st.session_state.get("habit_ai_cheer"):
+            cheer = st.session_state["habit_ai_cheer"]
+            cheer_card_raw = f"""
+            <div style="background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%); border: 2px solid #F59E0B; border-radius: 12px; padding: 16px 20px; margin-top: 6px; margin-bottom: 16px; box-shadow: 0 6px 20px rgba(245, 158, 11, 0.25);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div style="font-size: 1.12rem; font-weight: 800; color: #FBBF24; display: flex; align-items: center; gap: 8px;">
+                        <span>🌟 {cheer.get('title', 'あなたの努力を全力称賛！')}</span>
+                    </div>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #34D399; margin-bottom: 4px;">👏 これまでの努力を心から高評価</div>
+                    <div style="font-size: 0.93rem; color: #F8FAFC; line-height: 1.6; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #34D399;">
+                        {cheer.get('praise', '')}
+                    </div>
+                </div>
+                <div style="margin-bottom: 10px;">
+                    <div style="font-size: 0.82rem; font-weight: 700; color: #F472B6; margin-bottom: 4px;">🚀 やる気チャージ＆力強いエール</div>
+                    <div style="font-size: 0.93rem; color: #FEF08A; line-height: 1.6; background: rgba(0, 0, 0, 0.25); padding: 10px 14px; border-radius: 8px; border-left: 3px solid #F472B6; font-weight: 500;">
+                        {cheer.get('motivation', '')}
+                    </div>
+                </div>
+                <div style="font-size: 0.85rem; color: #93C5FD; display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.1);">
+                    <span>💡 <b>今日のアクション:</b> {cheer.get('action_nudge', '')}</span>
+                </div>
+            </div>
+            """
+            clean_cheer_html = "".join(line.strip() for line in cheer_card_raw.splitlines())
+            st.markdown(clean_cheer_html, unsafe_allow_html=True)
+            col_c_close1, col_c_close2 = st.columns([1.5, 4])
+            with col_c_close1:
+                if st.button("✕ エールを閉じる", key="btn_close_cheer", use_container_width=True):
+                    st.session_state["habit_ai_cheer"] = None
+                    st.rerun()
+
+        # カレンダー描画
+        cur_target_date = st.session_state["in_habit_date"]
+        cal_html = render_monthly_calendar_html(tracker_data, cal_year, cal_month, cur_target_date, today)
+        st.markdown(cal_html, unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------------
+    # 4. 折りたたみ: 過去データの移行 / バックアップ
+    # -------------------------------------------------------------------------
+    with st.expander("📥 過去データの移行（JSON貼り付け）/ 💾 バックアップ", expanded=False):
+        st.markdown(
+            """
+            <div style="font-size: 0.88rem; color: #CBD5E1; margin-bottom: 8px;">
+                <b>過去の記録を引き継ぐ方法:</b><br>
+                以前のタスク管理アプリ（<code>taskkanri</code>）で「💾 データをバックアップ」からダウンロードしたJSONファイルの内容、またはFirebase FirestoreからコピーしたJSONテキストを、下の枠にそのまま貼り付けて「インポート実行」ボタンを押してください。<br>
+                過去の日課実績・血圧・メモ・タスクがすべて復元され、安全に保管されます。
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        import_text = st.text_area("JSONデータを貼り付け", height=120, placeholder='{"trackerData": {...}, "adhocTasks": [...]} または Firestoreのデータ', key="ta_import_json")
+        btn_col_imp1, btn_col_imp2 = st.columns([1.5, 2.5])
+        with btn_col_imp1:
+            if st.button("📥 インポート実行", key="btn_do_import", use_container_width=True):
+                if import_text.strip():
+                    try:
+                        parsed = json.loads(import_text.strip())
+                        imported_tracker = {}
+                        imported_tasks = []
+
+                        if isinstance(parsed, dict):
+                            if "trackerData" in parsed and isinstance(parsed["trackerData"], dict):
+                                imported_tracker = parsed["trackerData"]
+                            else:
+                                if any(isinstance(v, (dict, bool)) for v in parsed.values()):
+                                    imported_tracker = parsed
+
+                            if "adhocTasks" in parsed and isinstance(parsed["adhocTasks"], list):
+                                imported_tasks = parsed["adhocTasks"]
+                        
+                        merged_tracker = {**tracker_data, **imported_tracker}
+                        existing_ids = {t.get("id") for t in adhoc_tasks}
+                        merged_tasks = list(adhoc_tasks)
+                        for t in imported_tasks:
+                            if t.get("id") not in existing_ids:
+                                merged_tasks.append(t)
+                                existing_ids.add(t.get("id"))
+                            else:
+                                for idx, et in enumerate(merged_tasks):
+                                    if et.get("id") == t.get("id"):
+                                        merged_tasks[idx] = t
+
+                        tk_data["trackerData"] = merged_tracker
+                        tk_data["adhocTasks"] = merged_tasks
+                        save_taskkanri_data(tk_data)
+                        st.success(f"✅ インポート成功！日課記録 {len(merged_tracker)} 日分、個別タスク {len(merged_tasks)} 件を保存・復元しました。")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"JSONの解析に失敗しました: {e}")
+                else:
+                    st.warning("JSONテキストを入力してください。")
+        with btn_col_imp2:
+            current_json_str = json.dumps(tk_data, ensure_ascii=False, indent=2)
+            today_str = datetime.date.today().strftime("%Y-%m-%d")
+            st.download_button(
+                label="💾 現在の全データをJSONダウンロード（バックアップ）",
+                data=current_json_str,
+                file_name=f"habit-tracker-backup-{today_str}.json",
+                mime="application/json",
+                use_container_width=True,
+                key="btn_dl_backup"
+            )

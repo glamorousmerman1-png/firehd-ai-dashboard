@@ -2616,6 +2616,89 @@ with tab7:
     if not isinstance(day_record, dict):
         day_record = {}
 
+    # -------------------------------------------------------------------------
+    # リアルタイム・オートセーブ（自動同期 & 即時保存）
+    # 操作時に st.session_state に格納された最新値を即座に検知して永続化。
+    # 「前日」「翌日」「カレンダー日付」に移動しても入力内容が絶対に消えません！
+    # -------------------------------------------------------------------------
+    has_auto_changes = False
+    synced_day = dict(day_record)
+
+    # 習慣項目のチェック状態同期
+    for habit in HABITS_LIST:
+        k = f"chk_{sel_date_str}_{habit}"
+        if k in st.session_state:
+            val = bool(st.session_state[k])
+            if synced_day.get(habit) != val:
+                synced_day[habit] = val
+                has_auto_changes = True
+
+    # 血圧（最高・最低）の同期（片方のみ入力時でも消えない安全設計）
+    sys_k = f"sys_{sel_date_str}"
+    dia_k = f"dia_{sel_date_str}"
+    if sys_k in st.session_state or dia_k in st.session_state:
+        cur_s = st.session_state.get(sys_k, synced_day.get("bpSys", 0))
+        cur_d = st.session_state.get(dia_k, synced_day.get("bpDia", 0))
+        cur_s = int(cur_s) if cur_s else 0
+        cur_d = int(cur_d) if cur_d else 0
+
+        if cur_s > 0 or cur_d > 0:
+            if synced_day.get("bpSys") != (cur_s if cur_s > 0 else None):
+                if cur_s > 0:
+                    synced_day["bpSys"] = cur_s
+                else:
+                    synced_day.pop("bpSys", None)
+                has_auto_changes = True
+
+            if synced_day.get("bpDia") != (cur_d if cur_d > 0 else None):
+                if cur_d > 0:
+                    synced_day["bpDia"] = cur_d
+                else:
+                    synced_day.pop("bpDia", None)
+                has_auto_changes = True
+
+            # どちらか一方でも数値が入っていれば自動で血圧測定を完了ON
+            if not synced_day.get("血圧測定", False):
+                synced_day["血圧測定"] = True
+                has_auto_changes = True
+        else:
+            # 両方0の場合、bpSys/bpDiaキーを整理
+            if "bpSys" in synced_day:
+                synced_day.pop("bpSys", None)
+                has_auto_changes = True
+            if "bpDia" in synced_day:
+                synced_day.pop("bpDia", None)
+                has_auto_changes = True
+
+    # ゴルフの同期
+    g_chk_k = f"chk_golf_{sel_date_str}"
+    g_num_k = f"num_golf_balls_{sel_date_str}"
+    if g_chk_k in st.session_state or g_num_k in st.session_state:
+        g_practiced = bool(st.session_state.get(g_chk_k, False))
+        g_balls = int(st.session_state.get(g_num_k, 0))
+        old_golf = synced_day.get("golf", {})
+        if not isinstance(old_golf, dict):
+            old_golf = {}
+        target_golf = {"practiced": True, "balls": g_balls} if (g_practiced or g_balls > 0) else {"practiced": False, "balls": 0}
+        if old_golf != target_golf:
+            synced_day["golf"] = target_golf
+            has_auto_changes = True
+
+    # 備考メモの同期
+    note_k = f"txt_note_{sel_date_str}"
+    if note_k in st.session_state:
+        note_val = str(st.session_state[note_k]).strip()
+        if synced_day.get("note", "") != note_val:
+            synced_day["note"] = note_val
+            has_auto_changes = True
+
+    if has_auto_changes:
+        tracker_data[sel_date_str] = synced_day
+        tk_data["trackerData"] = tracker_data
+        save_taskkanri_data(tk_data)
+        day_record = synced_day
+        st.session_state["habit_last_saved_time"] = datetime.datetime.now().strftime("%H:%M:%S")
+
     done_count = sum(1 for h in HABITS_LIST if day_record.get(h, False))
     total_habits = len(HABITS_LIST)
     progress_rate = done_count / total_habits if total_habits > 0 else 0
@@ -2640,98 +2723,82 @@ with tab7:
     st.progress(progress_rate)
 
     # -------------------------------------------------------------------------
-    # 2. 実績入力フォーム（最上位配置・質素で入力しやすいデザイン）
+    # 2. 実績入力フォーム（最上位配置・リアルタイム自動保存・質素で清潔なUI）
     # -------------------------------------------------------------------------
     col_habits, col_adhoc = st.columns([1.15, 1.1], gap="large")
 
     # 左カラム：日課の達成チェック & 血圧 & ゴルフ & 備考
     with col_habits:
-        with st.form(key=f"form_habits_{sel_date_str}"):
-            updated_day = dict(day_record)
+        # 自動保存ステータスバー
+        last_saved = st.session_state.get("habit_last_saved_time")
+        status_text = f"✅ 入力内容は自動保存されています（最終保存: {last_saved}）" if last_saved else "☁️ 入力内容は自動保存されます（チェックや数値変更で即時反映）"
+        st.markdown(
+            f"""
+            <div style="font-size: 0.8rem; color: #10B981; font-weight: 500; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>{status_text}</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-            st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #38BDF8; margin-top: 2px; margin-bottom: 4px;'>🏃 運動・健康</div>", unsafe_allow_html=True)
-            for habit in HABIT_CATEGORIES["運動・健康"]:
-                val = day_record.get(habit, False)
-                checked = st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
-                updated_day[habit] = checked
+        st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #38BDF8; margin-top: 2px; margin-bottom: 4px;'>🏃 運動・健康</div>", unsafe_allow_html=True)
+        for habit in HABIT_CATEGORIES["運動・健康"]:
+            val = day_record.get(habit, False)
+            st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
 
-                if habit == "血圧測定":
-                    # formの中でも最初から常時インライン表示（チェックON/OFFによる非表示バグを防止）
-                    cur_sys = day_record.get("bpSys", "")
-                    cur_dia = day_record.get("bpDia", "")
-                    bp_cols = st.columns([2, 2, 1.5])
-                    with bp_cols[0]:
-                        new_sys = st.number_input(
-                            "最高血圧 (上)",
-                            min_value=0,
-                            max_value=300,
-                            value=int(cur_sys) if cur_sys else 0,
-                            step=1,
-                            key=f"sys_{sel_date_str}",
-                            help="最高血圧（収縮期）"
-                        )
-                    with bp_cols[1]:
-                        new_dia = st.number_input(
-                            "最低血圧 (下)",
-                            min_value=0,
-                            max_value=200,
-                            value=int(cur_dia) if cur_dia else 0,
-                            step=1,
-                            key=f"dia_{sel_date_str}",
-                            help="最低血圧（拡張期）"
-                        )
-                    with bp_cols[2]:
-                        st.markdown("<div style='margin-top: 30px; font-size: 0.8rem; color: #94A3B8;'>mmHg</div>", unsafe_allow_html=True)
+            if habit == "血圧測定":
+                cur_sys = day_record.get("bpSys", 0)
+                cur_dia = day_record.get("bpDia", 0)
+                bp_cols = st.columns([2, 2, 1.5])
+                with bp_cols[0]:
+                    st.number_input(
+                        "最高血圧 (上)",
+                        min_value=0,
+                        max_value=300,
+                        value=int(cur_sys) if cur_sys else 0,
+                        step=1,
+                        key=f"sys_{sel_date_str}",
+                        help="最高血圧（収縮期）"
+                    )
+                with bp_cols[1]:
+                    st.number_input(
+                        "最低血圧 (下)",
+                        min_value=0,
+                        max_value=200,
+                        value=int(cur_dia) if cur_dia else 0,
+                        step=1,
+                        key=f"dia_{sel_date_str}",
+                        help="最低血圧（拡張期）"
+                    )
+                with bp_cols[2]:
+                    st.markdown("<div style='margin-top: 30px; font-size: 0.8rem; color: #94A3B8;'>mmHg</div>", unsafe_allow_html=True)
 
-                    if new_sys > 0 and new_dia > 0:
-                        updated_day["bpSys"] = int(new_sys)
-                        updated_day["bpDia"] = int(new_dia)
-                        # 数値が入力されていれば自動でチェックON
-                        updated_day["血圧測定"] = True
-                    elif checked:
-                        if new_sys > 0:
-                            updated_day["bpSys"] = int(new_sys)
-                        if new_dia > 0:
-                            updated_day["bpDia"] = int(new_dia)
-                    else:
-                        updated_day.pop("bpSys", None)
-                        updated_day.pop("bpDia", None)
+        st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #F59E0B; margin-top: 10px; margin-bottom: 4px;'>📝 記録・管理</div>", unsafe_allow_html=True)
+        for habit in HABIT_CATEGORIES["記録・管理"]:
+            val = day_record.get(habit, False)
+            st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
 
-            st.markdown("<div style='font-size: 0.9rem; font-weight: 600; color: #F59E0B; margin-top: 10px; margin-bottom: 4px;'>📝 記録・管理</div>", unsafe_allow_html=True)
-            for habit in HABIT_CATEGORIES["記録・管理"]:
-                val = day_record.get(habit, False)
-                checked = st.checkbox(habit, value=bool(val), key=f"chk_{sel_date_str}_{habit}")
-                updated_day[habit] = checked
+        st.markdown("<div style='margin-top: 10px; border-top: 1px dashed #334155;'></div>", unsafe_allow_html=True)
+        golf_info = day_record.get("golf", {})
+        if not isinstance(golf_info, dict):
+            golf_info = {}
+        golf_cols = st.columns([2.5, 2])
+        with golf_cols[0]:
+            st.checkbox("🏌️ ゴルフ打ちっぱなし", value=bool(golf_info.get("practiced", False)), key=f"chk_golf_{sel_date_str}")
+        with golf_cols[1]:
+            cur_balls = golf_info.get("balls", 0)
+            st.number_input("打った球数（球）", min_value=0, max_value=999, value=int(cur_balls) if cur_balls else 0, step=10, key=f"num_golf_balls_{sel_date_str}")
 
-            st.markdown("<div style='margin-top: 10px; border-top: 1px dashed #334155;'></div>", unsafe_allow_html=True)
-            golf_info = day_record.get("golf", {})
-            if not isinstance(golf_info, dict):
-                golf_info = {}
-            golf_cols = st.columns([2.5, 2])
-            with golf_cols[0]:
-                golf_checked = st.checkbox("🏌️ ゴルフ打ちっぱなし", value=bool(golf_info.get("practiced", False)), key=f"chk_golf_{sel_date_str}")
-            with golf_cols[1]:
-                cur_balls = golf_info.get("balls", 0)
-                new_balls = st.number_input("打った球数（球）", min_value=0, max_value=999, value=int(cur_balls) if cur_balls else 0, step=10, key=f"num_golf_balls_{sel_date_str}")
-            
-            if golf_checked or new_balls > 0:
-                updated_day["golf"] = {"practiced": True, "balls": int(new_balls)}
-            else:
-                updated_day["golf"] = {"practiced": False, "balls": 0}
+        cur_note = day_record.get("note", "")
+        st.text_input("備考メモ (未消化理由など)", value=str(cur_note) if cur_note else "", max_chars=30, key=f"txt_note_{sel_date_str}", placeholder="例: 疲労のためスクワット休み")
 
-            cur_note = day_record.get("note", "")
-            new_note = st.text_input("備考メモ (未消化理由など)", value=str(cur_note) if cur_note else "", max_chars=30, key=f"txt_note_{sel_date_str}", placeholder="例: 疲労のためスクワット休み")
-            updated_day["note"] = new_note.strip()
-
-            st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
-            save_habit_btn = st.form_submit_button("💾 実績を保存する", use_container_width=True)
-
-            if save_habit_btn:
-                tracker_data[sel_date_str] = updated_day
-                tk_data["trackerData"] = tracker_data
-                save_taskkanri_data(tk_data)
-                st.success(f"✅ {sel_date_str} の実績を保存しました！")
-                st.rerun()
+        st.markdown("<div style='margin-top: 12px;'></div>", unsafe_allow_html=True)
+        if st.button("💾 手動で今すぐ保存", key=f"btn_manual_save_{sel_date_str}", use_container_width=True):
+            tracker_data[sel_date_str] = day_record
+            tk_data["trackerData"] = tracker_data
+            save_taskkanri_data(tk_data)
+            st.session_state["habit_last_saved_time"] = datetime.datetime.now().strftime("%H:%M:%S")
+            st.success(f"✅ {sel_date_str} の実績を保存しました！")
 
     # 右カラム：個別タスク（ToDo）& 習慣ストリーク
     with col_adhoc:

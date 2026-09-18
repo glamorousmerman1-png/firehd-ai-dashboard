@@ -2845,84 +2845,138 @@ with tab7:
                 for t in active_adhoc:
                     t_id = t.get("id")
                     status_colors = {"起票": "#38BDF8", "対応中": "#F59E0B", "完了": "#10B981"}
-                    due_badge = f"<span style='color: #F87171; font-size: 0.8rem; font-weight: 600; margin-left: 6px;'>📅 期限: {t.get('dueDate')}</span>" if t.get("dueDate") else ""
-                    
-                    st.markdown(
-                        f"""
-                        <div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-weight: 600; color: #F8FAFC; font-size: 0.95rem;">{t.get('title')}</span>
-                                <span style="background-color: {status_colors.get(t.get('status'), '#6366F1')}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">{t.get('status')}</span>
-                            </div>
-                            <div style="font-size: 0.8rem; color: #94A3B8;">起票: {t.get('createdDate', '')} {due_badge}</div>
-                            {f"<div style='font-size: 0.85rem; color: #CBD5E1; margin-top: 4px; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;'>{t.get('note')}</div>" if t.get('note') else ''}
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                    act_cols = st.columns([1.8, 1, 1])
-                    with act_cols[0]:
-                        cur_stat = t.get("status", "起票")
-                        new_stat = st.selectbox(
-                            "ステータス変更",
-                            ["起票", "対応中", "完了"],
-                            index=["起票", "対応中", "完了"].index(cur_stat) if cur_stat in ["起票", "対応中", "完了"] else 0,
-                            key=f"sel_stat_{t_id}",
-                            label_visibility="collapsed"
+                    is_editing = st.session_state.get(f"edit_mode_{t_id}", False)
+
+                    if is_editing:
+                        # ✏️ インライン編集モード
+                        st.markdown(
+                            """
+                            <div style="background-color: #1E293B; border: 2px solid #6366F1; border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                                <div style="font-weight: 700; color: #A5B4FC; font-size: 0.92rem; margin-bottom: 8px;">✏️ タスクの編集</div>
+                            """,
+                            unsafe_allow_html=True
                         )
-                        if new_stat != cur_stat:
-                            t["status"] = new_stat
-                            tk_data["adhocTasks"] = adhoc_tasks
-                            save_taskkanri_data(tk_data)
-                            st.rerun()
-                    with act_cols[1]:
-                        if st.button("完了", key=f"btn_complete_{t_id}", use_container_width=True):
-                            t["status"] = "完了"
-                            tk_data["adhocTasks"] = adhoc_tasks
-                            save_taskkanri_data(tk_data)
-                            st.rerun()
-                    with act_cols[2]:
-                        if st.button("削除", key=f"btn_del_adhoc_{t_id}", use_container_width=True):
-                            tk_data["adhocTasks"] = [item for item in adhoc_tasks if item.get("id") != t_id]
-                            save_taskkanri_data(tk_data)
-                            st.rerun()
+                        edit_title = st.text_input("タスク名*", value=t.get("title", ""), key=f"et_title_{t_id}")
 
-                    # ✏️ タイトル・期限日・詳細備考の編集フォーム
-                    with st.expander("✏️ タイトル・期限・詳細備考を編集", expanded=False):
-                        with st.form(key=f"form_edit_task_{t_id}"):
-                            edit_title = st.text_input("タスク名*", value=t.get("title", ""), key=f"et_title_{t_id}")
-                            col_ed1, col_ed2 = st.columns([1, 1])
-                            with col_ed1:
-                                cur_due_str = t.get("dueDate", "")
-                                cur_due_val = None
-                                if cur_due_str:
-                                    try:
-                                        cur_due_val = datetime.datetime.strptime(cur_due_str, "%Y-%m-%d").date()
-                                    except Exception:
-                                        cur_due_val = None
-                                edit_due = st.date_input("期限日（任意）", value=cur_due_val, key=f"et_due_{t_id}")
-                            with col_ed2:
-                                edit_stat = st.selectbox(
-                                    "ステータス",
-                                    ["起票", "対応中", "完了"],
-                                    index=["起票", "対応中", "完了"].index(t.get("status", "起票")) if t.get("status") in ["起票", "対応中", "完了"] else 0,
-                                    key=f"et_stat_{t_id}"
+                        col_ed1, col_ed2 = st.columns([1.3, 1])
+                        with col_ed1:
+                            cur_due_str = t.get("dueDate", "")
+                            cur_due_val = None
+                            if cur_due_str:
+                                try:
+                                    cur_due_val = datetime.datetime.strptime(cur_due_str, "%Y-%m-%d").date()
+                                except Exception:
+                                    cur_due_val = None
+
+                            no_due = st.checkbox("期限日なし", value=(cur_due_val is None), key=f"no_due_{t_id}")
+                            if not no_due:
+                                edit_due = st.date_input(
+                                    "期限日",
+                                    value=cur_due_val if cur_due_val else today,
+                                    key=f"et_due_{t_id}"
                                 )
-                            edit_note = st.text_area("詳細・備考", value=t.get("note", ""), height=70, key=f"et_note_{t_id}", placeholder="補足事項や進捗メモなど...")
-                            save_edit_btn = st.form_submit_button("💾 変更を保存する", use_container_width=True)
+                            else:
+                                edit_due = None
 
-                            if save_edit_btn:
+                        with col_ed2:
+                            edit_stat = st.selectbox(
+                                "ステータス",
+                                ["起票", "対応中", "完了"],
+                                index=["起票", "対応中", "完了"].index(t.get("status", "起票")) if t.get("status") in ["起票", "対応中", "完了"] else 0,
+                                key=f"et_stat_{t_id}"
+                            )
+
+                        edit_note = st.text_area(
+                            "詳細・備考",
+                            value=t.get("note", ""),
+                            height=90,
+                            key=f"et_note_{t_id}",
+                            placeholder="補足事項、URL、進捗メモなど..."
+                        )
+
+                        b_save_col, b_cancel_col = st.columns([1, 1])
+                        with b_save_col:
+                            if st.button("💾 変更を保存", key=f"btn_save_ed_{t_id}", use_container_width=True, type="primary"):
                                 if edit_title.strip():
                                     t["title"] = edit_title.strip()
                                     t["status"] = edit_stat
-                                    t["dueDate"] = edit_due.strftime("%Y-%m-%d") if edit_due else ""
+                                    t["dueDate"] = edit_due.strftime("%Y-%m-%d") if (edit_due and not no_due) else ""
                                     t["note"] = edit_note.strip()
                                     tk_data["adhocTasks"] = adhoc_tasks
                                     save_taskkanri_data(tk_data)
-                                    st.success(f"タスク「{t['title']}」を更新しました！")
+                                    st.session_state[f"edit_mode_{t_id}"] = False
+                                    st.toast(f"✅ 「{t['title']}」を更新しました！")
                                     st.rerun()
                                 else:
                                     st.warning("タスク名を入力してください。")
+                        with b_cancel_col:
+                            if st.button("✕ キャンセル", key=f"btn_cancel_ed_{t_id}", use_container_width=True):
+                                st.session_state[f"edit_mode_{t_id}"] = False
+                                st.rerun()
+
+                        st.markdown("</div>", unsafe_allow_html=True)
+
+                    else:
+                        # 📋 通常カード表示
+                        due_badge = f"<span style='color: #F87171; font-size: 0.8rem; font-weight: 600; margin-left: 6px;'>📅 期限: {t.get('dueDate')}</span>" if t.get("dueDate") else ""
+
+                        raw_note = t.get("note", "")
+                        if raw_note:
+                            import html
+                            escaped_note = html.escape(raw_note)
+                            linked_note = re.sub(
+                                r'(https?://[^\s<]+)',
+                                r'<a href="\1" target="_blank" rel="noopener noreferrer" style="color: #60A5FA; text-decoration: underline; word-break: break-all;">\1</a>',
+                                escaped_note
+                            ).replace("\n", "<br>")
+                            note_html = f"<div style='font-size: 0.84rem; color: #CBD5E1; margin-top: 6px; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 6px; line-height: 1.5;'>{linked_note}</div>"
+                        else:
+                            note_html = ""
+
+                        st.markdown(
+                            f"""
+                            <div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-weight: 600; color: #F8FAFC; font-size: 0.95rem;">{t.get('title')}</span>
+                                    <span style="background-color: {status_colors.get(t.get('status'), '#6366F1')}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">{t.get('status')}</span>
+                                </div>
+                                <div style="font-size: 0.8rem; color: #94A3B8;">起票: {t.get('createdDate', '')} {due_badge}</div>
+                                {note_html}
+                            </div>
+                            """,
+                            unsafe_allow_html=True
+                        )
+
+                        act_cols = st.columns([1.6, 1, 1, 0.8])
+                        with act_cols[0]:
+                            cur_stat = t.get("status", "起票")
+                            new_stat = st.selectbox(
+                                "ステータス",
+                                ["起票", "対応中", "完了"],
+                                index=["起票", "対応中", "完了"].index(cur_stat) if cur_stat in ["起票", "対応中", "完了"] else 0,
+                                key=f"sel_stat_{t_id}",
+                                label_visibility="collapsed"
+                            )
+                            if new_stat != cur_stat:
+                                t["status"] = new_stat
+                                tk_data["adhocTasks"] = adhoc_tasks
+                                save_taskkanri_data(tk_data)
+                                st.rerun()
+                        with act_cols[1]:
+                            if st.button("✏️ 編集", key=f"btn_edit_mode_{t_id}", use_container_width=True):
+                                st.session_state[f"edit_mode_{t_id}"] = True
+                                st.rerun()
+                        with act_cols[2]:
+                            if st.button("✔ 完了", key=f"btn_complete_{t_id}", use_container_width=True):
+                                t["status"] = "完了"
+                                tk_data["adhocTasks"] = adhoc_tasks
+                                save_taskkanri_data(tk_data)
+                                st.rerun()
+                        with act_cols[3]:
+                            if st.button("🗑", key=f"btn_del_adhoc_{t_id}", use_container_width=True, help="タスクを削除"):
+                                tk_data["adhocTasks"] = [item for item in adhoc_tasks if item.get("id") != t_id]
+                                save_taskkanri_data(tk_data)
+                                st.rerun()
 
             if completed_adhoc:
                 with st.expander(f"✅ 完了済みタスク ({len(completed_adhoc)}件)", expanded=False):

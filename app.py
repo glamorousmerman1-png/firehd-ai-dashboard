@@ -2656,24 +2656,43 @@ with tab7:
                 updated_day[habit] = checked
 
                 if habit == "血圧測定":
-                    if checked:
-                        bp_cols = st.columns([2, 2, 1.5])
-                        with bp_cols[0]:
-                            cur_sys = day_record.get("bpSys", "")
-                            new_sys = st.number_input("最高 (上)", min_value=0, max_value=300, value=int(cur_sys) if cur_sys else 0, step=1, key=f"sys_{sel_date_str}")
-                            if new_sys > 0:
-                                updated_day["bpSys"] = int(new_sys)
-                            else:
-                                updated_day.pop("bpSys", None)
-                        with bp_cols[1]:
-                            cur_dia = day_record.get("bpDia", "")
-                            new_dia = st.number_input("最低 (下)", min_value=0, max_value=200, value=int(cur_dia) if cur_dia else 0, step=1, key=f"dia_{sel_date_str}")
-                            if new_dia > 0:
-                                updated_day["bpDia"] = int(new_dia)
-                            else:
-                                updated_day.pop("bpDia", None)
-                        with bp_cols[2]:
-                            st.markdown("<div style='margin-top: 30px; font-size: 0.8rem; color: #94A3B8;'>mmHg</div>", unsafe_allow_html=True)
+                    # formの中でも最初から常時インライン表示（チェックON/OFFによる非表示バグを防止）
+                    cur_sys = day_record.get("bpSys", "")
+                    cur_dia = day_record.get("bpDia", "")
+                    bp_cols = st.columns([2, 2, 1.5])
+                    with bp_cols[0]:
+                        new_sys = st.number_input(
+                            "最高血圧 (上)",
+                            min_value=0,
+                            max_value=300,
+                            value=int(cur_sys) if cur_sys else 0,
+                            step=1,
+                            key=f"sys_{sel_date_str}",
+                            help="最高血圧（収縮期）"
+                        )
+                    with bp_cols[1]:
+                        new_dia = st.number_input(
+                            "最低血圧 (下)",
+                            min_value=0,
+                            max_value=200,
+                            value=int(cur_dia) if cur_dia else 0,
+                            step=1,
+                            key=f"dia_{sel_date_str}",
+                            help="最低血圧（拡張期）"
+                        )
+                    with bp_cols[2]:
+                        st.markdown("<div style='margin-top: 30px; font-size: 0.8rem; color: #94A3B8;'>mmHg</div>", unsafe_allow_html=True)
+
+                    if new_sys > 0 and new_dia > 0:
+                        updated_day["bpSys"] = int(new_sys)
+                        updated_day["bpDia"] = int(new_dia)
+                        # 数値が入力されていれば自動でチェックON
+                        updated_day["血圧測定"] = True
+                    elif checked:
+                        if new_sys > 0:
+                            updated_day["bpSys"] = int(new_sys)
+                        if new_dia > 0:
+                            updated_day["bpDia"] = int(new_dia)
                     else:
                         updated_day.pop("bpSys", None)
                         updated_day.pop("bpDia", None)
@@ -2688,10 +2707,14 @@ with tab7:
             golf_info = day_record.get("golf", {})
             if not isinstance(golf_info, dict):
                 golf_info = {}
-            golf_checked = st.checkbox("🏌️ ゴルフ打ちっぱなし", value=bool(golf_info.get("practiced", False)), key=f"chk_golf_{sel_date_str}")
-            if golf_checked:
+            golf_cols = st.columns([2.5, 2])
+            with golf_cols[0]:
+                golf_checked = st.checkbox("🏌️ ゴルフ打ちっぱなし", value=bool(golf_info.get("practiced", False)), key=f"chk_golf_{sel_date_str}")
+            with golf_cols[1]:
                 cur_balls = golf_info.get("balls", 0)
-                new_balls = st.number_input("球数（球）", min_value=0, max_value=999, value=int(cur_balls) if cur_balls else 50, step=10, key=f"num_golf_balls_{sel_date_str}")
+                new_balls = st.number_input("打った球数（球）", min_value=0, max_value=999, value=int(cur_balls) if cur_balls else 0, step=10, key=f"num_golf_balls_{sel_date_str}")
+            
+            if golf_checked or new_balls > 0:
                 updated_day["golf"] = {"practiced": True, "balls": int(new_balls)}
             else:
                 updated_day["golf"] = {"practiced": False, "balls": 0}
